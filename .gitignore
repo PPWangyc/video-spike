@@ -1,0 +1,7 @@
+*results*
+*log*
+__pycache__/
+MACOSX/
+*cache*
+wandb/
+*.egg-info
