@@ -8,7 +8,9 @@ from pathlib import Path
 import multiprocessing
 from functools import partial
 from scipy.interpolate import interp1d
+import cv2
 
+import ibllib.io.video as vidio
 from iblutil.numerical import ismember, bincount2D
 import brainbox.behavior.dlc as dlc
 from brainbox.io.one import SpikeSortingLoader, SessionLoader
@@ -178,11 +180,12 @@ def load_trials_and_mask(
             'firstMovement_times',
             'feedbackType'
         ]
-
+    
     if sess_loader is None:
-        sess_loader = SessionLoader(one, eid)
+        sess_loader = SessionLoader(one, eid=eid)
 
     if sess_loader.trials.empty:
+        # print(sess_loader)
         sess_loader.load_trials()
 
     # Create a mask for trials to exclude
@@ -385,7 +388,7 @@ def bin_spiking_data(reg_clu_ids, neural_df, intervals=None, trials_df=None, n_w
             binsize=kwargs['binsize'],
             n_workers=n_workers)
         binned_list = [x.T for x in binned_array]   
-    return np.array(binned_list), clusters_used_in_bins
+    return np.array(binned_list), clusters_used_in_bins, intervals
     
 def load_target_behavior(one, eid, target):
     """
@@ -410,7 +413,7 @@ def load_target_behavior(one, eid, target):
     """
 
     # To load wheel and motion energy, we just use the SessionLoader, e.g.
-    sess_loader = SessionLoader(one, eid)
+    sess_loader = SessionLoader(one, eid=eid)
     
     # wheel is a dataframe that contains wheel times and position interpolated to a uniform sampling rate, velocity and
     # acceleration computed using Gaussian smoothing
@@ -836,13 +839,8 @@ def prepare_data(one, eid, bwm_df, params, n_workers=os.cpu_count()):
     return neural_dict, behave_dict, meta_data, trials_data, good_trials_mask
 
 
-def align_spike_behavior(binned_spikes, binned_behaviors, trials_mask=None):
+def align_spike_behavior(binned_spikes, binned_behaviors, beh_names, trials_mask=None):
 
-    beh_names = ['choice', 'reward', 'block',
-                 'wheel-speed', 
-                 'whisker-motion-energy', 
-                 #'pupil-diameter'
-                ]
 
     target_mask = [1] * len(binned_spikes)
     for beh_name in beh_names:
@@ -872,3 +870,54 @@ def align_spike_behavior(binned_spikes, binned_behaviors, trials_mask=None):
 
     return aligned_binned_spikes, aligned_binned_behaviors, target_mask, del_idxs
 
+def load_video_index(one, eid, camera, intervals):
+    # get the remote video URL from eid
+    urls = vidio.url_from_eid(eid, one=one)
+    url = urls[camera]  # URL for the left camera
+
+    # Example 2: get the video label from a video file path or URL
+    label = vidio.label_from_path(url)
+    print(f'Using URL for the {label} camera')
+    """
+    The preload function will by default pre-allocate the memory before loading the frames,
+    and will return the frames as a numpy array of the shape (l, h, w, 3), where l = the number of
+    frame indices given.  The indices must be an iterable of positive integers.  Because the videos
+    are in black and white the values of each color channel are identical.   Therefore to save on
+    memory you can provide a slice that returns only one of the three channels for each frame.  The
+    resulting shape will be (l, h, w).  NB: Any slice or boolean array may be provided which is
+    useful for cropping to an ROI.
+    """
+
+    meta = vidio.get_video_meta(url, one=one)
+    for k, v in meta.items():
+        print(f'The video {k} = {v}')
+    fps = meta['fps']
+    # Example 6: load video timestamps
+    ts = one.load_dataset(eid, f'_ibl_{label}Camera.times.npy', collection='alf')
+    interval_len = intervals[0,1] - intervals[0,0]
+    reg_frame_num = int(fps * interval_len)
+    session_frames =[]
+    trial_index_list = []
+    for trial in intervals:
+        # ts is timestamps for each frame in the video
+        # get the timestamps idxes for trial[0] to trial[1]
+        ts_trial = ts[(ts > trial[0]) & (ts < trial[1])]
+        start_idx = np.searchsorted(ts, trial[0])
+        frame_idxes = np.arange(start_idx, start_idx + reg_frame_num)
+        if abs(len(ts_trial) - reg_frame_num) > 10:
+            raise ValueError(f'Number of frames in the video does not match the expected number of frames {reg_frame_num}. Bias > 10')
+        trial_index_list.append(frame_idxes)
+    session_frames = np.array(session_frames)
+    trial_index_list = np.array(trial_index_list)
+    # [trial, frame, height, width]
+    return trial_index_list, url
+
+def load_video(index, url, quiet=True):
+    trial_frames = vidio.get_video_frames_preload(
+        url, 
+        index, 
+        mask=np.s_[:, :, 0],
+        quiet=quiet
+    )
+    return trial_frames
+    

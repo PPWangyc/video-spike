@@ -5,3 +5,5 @@ MACOSX/
 *cache*
 wandb/
 *.egg-info
+*.png
+*.jpg
