@@ -15,9 +15,9 @@ class BaseDataset():
             ):
         self.config = config
         self.mode = mode
-        dataset = wds.WebDataset(data[mode])
+        dataset = wds.WebDataset(data[mode],seed=config.seed)
         if mode == 'train':
-            dataset = dataset.shuffle(1000)
+            dataset = dataset.shuffle(10000)
         self.dataset = dataset.decode("pil").map(self.preprocess_sample)
         self.video_transform = transforms.Compose([
             transforms.ToTensor(),
@@ -54,8 +54,9 @@ class BaseDataset():
     def get_dataloader(
             self,
             ):
-        return DataLoader(
+        dataloader =  DataLoader(
             self.dataset,
             batch_size=self.config.training.train_batch_size if self.mode == 'train' else self.config.training.test_batch_size,
             num_workers=self.config.training.num_workers,
             )
+        return dataloader

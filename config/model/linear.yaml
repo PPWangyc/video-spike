@@ -1,1 +1,16 @@
 model_class: Linear
+
+encoder:
+  type: LinearEncoder
+  input_dim: 1966080 # 120 * 128 * 128
+  hidden_dims: [256, 128]
+  output_dim: 64
+  layer_num: 2
+
+
+decoder:
+  type: LinearDecoder
+  input_dim: 64
+  hidden_dims: [128, 256]
+  output_dim: 43600 # neuron * time, 436 * 100
+  layer_num: 2

@@ -20,7 +20,7 @@ training:
   train_batch_size: 16
   test_batch_size: 16  
   shuffle_test_dataloader: false    # Shuffle test dataloader between epochs
-  num_workers: 4  # Number of workers for the DataLoader
+  num_workers: 2 # Number of workers for the DataLoader
 
   save_plot_every_n_epochs: 20  # Plot the model output every n epochs
   save_every: 100  # Save checkpoint
@@ -44,8 +44,8 @@ data:
     video: 
       transform: null
       transform_kwargs: {'ToTensor','Reshape'}
-      width: 256
-      height: 256
+      width: 128
+      height: 128
 
   # dataset_name: lorenz # Any registered dataset name.
   dataset_name: ibl # Any registered dataset name.
