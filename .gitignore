@@ -7,3 +7,5 @@ wandb/
 *.egg-info
 *.png
 *.jpg
+data/
+*.mp4

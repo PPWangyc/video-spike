@@ -133,3 +133,5 @@ def metrics_list(gt, pred, metrics=["bps", "r2", "rsquared", "mse", "mae", "acc"
     if "acc" in metrics:
         acc = accuracy_score(gt.cpu().numpy(), pred.cpu().detach().numpy())
         results["acc"] = acc
+
+    return results

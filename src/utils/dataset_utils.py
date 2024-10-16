@@ -19,8 +19,26 @@ def split_dataset(data_dir, train_ratio=0.8, val_ratio=0.1, test_ratio=0.1):
     val_filenames = filenames[split1:split2]
     test_filenames = filenames[split2:]
 
+    train_eids = get_eids_from_filenames(train_filenames)
+    val_eids = get_eids_from_filenames(val_filenames)
+    test_eids = get_eids_from_filenames(test_filenames)
+
     return {
         'train': train_filenames,
         'val': val_filenames,
-        'test': test_filenames
+        'test': test_filenames,
+        'eid': {
+            'train': train_eids,
+            'val': val_eids,
+            'test': test_eids
+        }
     }
+
+def get_eids_from_filenames(filenames):
+    """
+    Get the experiment IDs from the filenames.
+    """
+    eids = [os.path.basename(f).split('_')[0] for f in filenames]
+    # unique eids
+    eids = list(set(eids))
+    return eids

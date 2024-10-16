@@ -17,7 +17,7 @@ conda activate vs
 
 cd ..
 
-python src/prepare_data.py
+python src/prepare_data.py --base_path data
 
 conda deactivate
 cd script

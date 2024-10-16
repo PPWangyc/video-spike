@@ -19,8 +19,8 @@ from utils.ibl_data_utils import (
 import json
 import webdataset as wds
 from tqdm import tqdm
-# from utils.dataset_utils import create_dataset, upload_dataset
-# from utils.preprocess_lfp import prepare_lfp, featurize_lfp
+import tarfile
+import cv2
 
 ap = argparse.ArgumentParser()
 ap.add_argument("--base_path", type=str, default="/expanse/lustre/scratch/ywang74/temp_project/Downloads")
@@ -153,24 +153,34 @@ for eid_idx, eid in enumerate(include_eids):
             'cluster_depths': cluster_depths,
             **params
         }
+        _, h, w = trial_video.shape
+        print(trial_video.shape)
 
+
+        out_video = cv2.VideoWriter('temp.mp4', cv2.VideoWriter_fourcc(*'mp4v'), 60, (w, h), isColor=False)
+        for frame in trial_video:
+            out_video.write(frame)
+        out_video.release()
         trial_data = {
             'ap': spike,
-            'video': trial_video,
             **beh
         }
         # each key in trial_data add .pyd
         trial_data = {key + '.pyd': value for key, value in trial_data.items()}
-        
+        sample_key = f'{eid}_{trial_id}'
         sample_dict = {
-            '__key__': f'{eid}_{trial_id}',
+            '__key__': sample_key,
             **trial_data,
-            'meta.json': json.dumps(trial_meta)
-        }
+            'meta.json': json.dumps(trial_meta)        }
 
         sink_path = os.path.join(args.base_path, 'Data', dataset_name, f'{eid}_{trial_id}')
         with wds.TarWriter(sink_path + '.tar') as sink:
             sink.write(sample_dict)
+
+        # add video to the tar file
+        with tarfile.open(sink_path + '.tar', 'a') as tar:
+            tar.add('temp.mp4', arcname=f'{sample_key}.video.mp4')
+        os.remove('temp.mp4')
 
     # train_dataset = create_dataset(
     #     aligned_binned_spikes[train_idxs], bwm_df, eid, params, 

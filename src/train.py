@@ -64,6 +64,7 @@ def main():
         "lr_scheduler": lr_scheduler,
         "config": config,
         "criterion": criterion,
+        "dataset_split_dict": dataset_split_dict
     }
     trainer = make_base_trainer(
         model=model,

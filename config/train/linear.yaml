@@ -10,7 +10,7 @@ wandb:
 dirs:
   checkpoint_dir: checkpoints  # save model state dicts (todo optimizer states)
   log_dir: results  # save tensorboard logs
-  data_dir: /expanse/lustre/scratch/ywang74/temp_project/Data/ibl-video
+  data_dir: data/ibl-video
   
 
 
@@ -20,7 +20,7 @@ training:
   train_batch_size: 16
   test_batch_size: 16  
   shuffle_test_dataloader: false    # Shuffle test dataloader between epochs
-  num_workers: 2 # Number of workers for the DataLoader
+  num_workers: 4 # Number of workers for the DataLoader
 
   save_plot_every_n_epochs: 20  # Plot the model output every n epochs
   save_every: 100  # Save checkpoint
