@@ -41,7 +41,7 @@ one = ONE(
     cache_dir = args.base_path
 )
 dataset_name = 'ibl-video'
-os.makedirs(os.path.join(args.base_path, 'Data', dataset_name), exist_ok=True)
+os.makedirs(os.path.join(args.base_path, dataset_name), exist_ok=True)
 freeze_file = 'data/bwm_release.csv'
 bwm_df = pd.read_csv(freeze_file, index_col=0)
 
@@ -173,7 +173,7 @@ for eid_idx, eid in enumerate(include_eids):
             **trial_data,
             'meta.json': json.dumps(trial_meta)        }
 
-        sink_path = os.path.join(args.base_path, 'Data', dataset_name, f'{eid}_{trial_id}')
+        sink_path = os.path.join(args.base_path, dataset_name, f'{eid}_{trial_id}')
         with wds.TarWriter(sink_path + '.tar') as sink:
             sink.write(sample_dict)
 

@@ -1,14 +1,17 @@
 #!/bin/bash
 
-#SBATCH --job-name=prepare-data
-#SBATCH --output=prepare-data-%j.out
+#SBATCH --account=col169
+#SBATCH --partition=gpu-shared
+#SBATCH --job-name="train"
+#SBATCH --output="train.%j.out"
 #SBATCH -N 1
-#SBATCH -n 1
+#SBACTH --array=0
+#SBATCH -c 8
 #SBATCH --ntasks-per-node=1
-#SBATCH --cpus-per-task=8
-#SBATCH --gres=gpu:1
-#SBATCH -t 12:00:00 
-#SBATCH --mem=64g
+#SBATCH --mem 150000
+#SBATCH --gpus=1
+#SBATCH -t 2-00
+#SBATCH --export=ALL
 
 . ~/.bashrc
 

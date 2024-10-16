@@ -1,17 +1,21 @@
 #!/bin/bash
 
-#SBATCH --job-name=prepare-data
-#SBATCH --output=prepare-data-%j.out
+#SBATCH --account=col169
+#SBATCH --partition=gpu-shared
+#SBATCH --job-name="prepare_data"
+#SBATCH --output="prepare_data.%j.out"
 #SBATCH -N 1
-#SBATCH -n 1
+#SBACTH --array=0
+#SBATCH -c 8
 #SBATCH --ntasks-per-node=1
-#SBATCH --cpus-per-task=8
-#SBATCH --gres=gpu:1
-#SBATCH -t 12:00:00 
-#SBATCH --mem=64g
+#SBATCH --mem 150000
+#SBATCH --gpus=1
+#SBATCH -t 2-00
+#SBATCH --export=ALL
 
 . ~/.bashrc
 echo $TMPDIR
+
 
 conda activate vs
 
@@ -19,5 +23,15 @@ cd ..
 
 python src/prepare_data.py --base_path data
 
+# module load
+ml git-lfs/2.11.0
+cd data/ibl-video
+git lfs install
+# track *tar files
+git lfs track "*.tar"
+git add .
+git commit -m "track *tar files"
+git push
+cd ../..
 conda deactivate
 cd script
