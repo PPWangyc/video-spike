@@ -23,15 +23,15 @@ cd ..
 
 python src/prepare_data.py --base_path data
 
-# module load
-ml git-lfs/2.11.0
-cd data/ibl-video
-git lfs install
-# track *tar files
-git lfs track "*.tar"
-git add .
-git commit -m "track *tar files"
-git push
-cd ../..
+# # module load
+# ml git-lfs/2.11.0
+# cd data/ibl-video
+# git lfs install
+# # track *tar files
+# git lfs track "*.tar"
+# git add .
+# git commit -m "track *tar files"
+# git push
+# cd ../..
 conda deactivate
 cd script

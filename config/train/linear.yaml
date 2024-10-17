@@ -20,7 +20,7 @@ training:
   train_batch_size: 16
   test_batch_size: 16  
   shuffle_test_dataloader: false    # Shuffle test dataloader between epochs
-  num_workers: 4 # Number of workers for the DataLoader
+  num_workers: 1 # Number of workers for the DataLoader
 
   save_plot_every_n_epochs: 20  # Plot the model output every n epochs
   save_every: 100  # Save checkpoint

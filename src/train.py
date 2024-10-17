@@ -74,6 +74,13 @@ def main():
         test_dataloader=test_dataloader,
         **trainer_kwargs
     )
+    # import time
+    # now = time.time()
+    # count = 0
+    # for batch in train_dataloader:
+    #     print(f"batch: {count}, time: {time.time() - now}s, size: {batch['ap'].shape[0]}")
+    #     now = time.time()
+    # exit()
     trainer.train()
 if __name__ == '__main__':
     main()

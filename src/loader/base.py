@@ -5,7 +5,7 @@ import webdataset as wds
 import numpy as np
 import torchvision.transforms as transforms
 from torchvision.io import write_video
-
+import time
 class BaseDataset():
     def __init__(
             self, 
@@ -47,10 +47,11 @@ class BaseDataset():
             if self.config.data.modalities[mod]:
                 video, _, meta = value
                 # grayscale video only take the first channel
-                video = video[:,:,:,0].unsqueeze(1)
+                video = video[:,:,:,0].unsqueeze(1).float()
                 # transform video to (T, C, H, W)
-                video= torch.stack([self.video_transform(v) for v in video]).float()
+                # video= torch.stack([self.video_transform(v) for v in video]).float()
 
+                # print(f"Time taken to process video: {end-start}")
                 # _video = video.clone().squeeze(1).unsqueeze(-1)
                 # # video shape: (T, C, H, W)
                 # _video = _video.repeat(1,1,1,3)

@@ -157,9 +157,10 @@ for eid_idx, eid in enumerate(include_eids):
         print(trial_video.shape)
 
 
-        out_video = cv2.VideoWriter('temp.mp4', cv2.VideoWriter_fourcc(*'mp4v'), 60, (w, h), isColor=False)
+        out_video = cv2.VideoWriter('temp.mp4', cv2.VideoWriter_fourcc(*'mp4v'), 60, (128, 128), isColor=False)
         for frame in trial_video:
-            out_video.write(frame)
+            _frame = cv2.resize(frame, (128, 128))
+            out_video.write(_frame)
         out_video.release()
         trial_data = {
             'ap': spike,
@@ -171,7 +172,8 @@ for eid_idx, eid in enumerate(include_eids):
         sample_dict = {
             '__key__': sample_key,
             **trial_data,
-            'meta.json': json.dumps(trial_meta)        }
+            'meta.json': json.dumps(trial_meta)
+            }
 
         sink_path = os.path.join(args.base_path, dataset_name, f'{eid}_{trial_id}')
         with wds.TarWriter(sink_path + '.tar') as sink:
