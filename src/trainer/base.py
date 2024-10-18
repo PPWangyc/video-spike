@@ -39,11 +39,13 @@ class BaseTrainer():
         self.metric = ['bps']       
         self.session_active_neurons = {}
 
+        self.input_mods = _get_input_modailities(self.config)
         self._create_log_dir()
 
-        self.input_mods = _get_input_modailities(self.config)
-
     def _create_log_dir(self):
+        _input_mods = "_".join(self.input_mods)
+        self.log_dir = os.path.join(self.log_dir, 
+                                    _input_mods)
         os.makedirs(self.log_dir, exist_ok=True)
         wandb.init(project=self.config.wandb.project, 
                    config=self.config) if self.config.wandb.use else None
@@ -57,22 +59,32 @@ class BaseTrainer():
         inputs = torch.cat(_inputs, dim=-1)
         return self.model(inputs)
 
-    def _plot_figs(self, eval_epoch_results, epoch):
+    def _plot_figs(self, eval_epoch_results, epoch=0, test=False):
+        phase = "test" if test else "eval"
+        epoch = epoch if not test else "test"
         gt_pred_fig = self.plot_epoch(
-            gt=eval_epoch_results['eval_gt'][0], 
-            preds=eval_epoch_results['eval_preds'][0], 
+            gt=eval_epoch_results[f'{phase}_gt'][0], 
+            preds=eval_epoch_results[f'{phase}_preds'][0], 
             epoch=epoch,
             active_neurons=range(5),
             modality='ap'
         )
         if self.config.wandb.use:
-            wandb.log(
-                {
-                    "best_epoch": epoch,
-                    f"best_gt_pred_fig": wandb.Image(gt_pred_fig['plot_gt_pred']),
-                    f"best_r2_fig": wandb.Image(gt_pred_fig['plot_r2'])
-                }
-            )
+            if test:
+                wandb.log(
+                    {
+                        f"test_gt_pred_fig": wandb.Image(gt_pred_fig['plot_gt_pred']),
+                        f"test_r2_fig": wandb.Image(gt_pred_fig['plot_r2'])
+                    }
+                )
+            else:
+                wandb.log(
+                    {
+                        "best_epoch": epoch,
+                        f"best_gt_pred_fig": wandb.Image(gt_pred_fig['plot_gt_pred']),
+                        f"best_r2_fig": wandb.Image(gt_pred_fig['plot_r2'])
+                    }
+                )
         else:
             gt_pred_fig['plot_gt_pred'].savefig(
                 os.path.join(self.log_dir, f"best_trial_{epoch}.png")
@@ -93,34 +105,28 @@ class BaseTrainer():
             if eval_epoch_results:
                 if eval_epoch_results['eval_res']['eval_bps'] > best_eval_bps:
                     best_eval_bps = eval_epoch_results['eval_res']['eval_bps']
+                    best_eval_loss = eval_epoch_results['eval_res']['eval_loss']
                     print(f"epoch: {epoch} best eval_bps: {best_eval_bps}")
                     self.save_model(name="best", epoch=epoch)
 
                     wandb.log({"best_eval_bps_epoch": epoch}) if self.config.wandb.use else None
-                    self._plot_figs(eval_epoch_results, epoch)
+                    self._plot_figs(eval_epoch_results, epoch=epoch)
                     print(f"best_epoch: {epoch}, best_eval_bps: {best_eval_bps}")
-
-            if epoch % self.config.training.save_plot_every_n_epochs == 0:
-                self._plot_figs(eval_epoch_results, epoch)
-
-            if self.config.wandb.use:
-                wandb.log({
-                    **train_epoch_results,
-                    **eval_epoch_results['eval_res'],
-                })
-            else:
-                print({**train_epoch_results, **eval_epoch_results['eval_res']})
+            
+                log = {**train_epoch_results, **eval_epoch_results['eval_res']}  
+                wandb.log(log) if self.config.wandb.use else print(log)
                 
         self.save_model(name="last", epoch=epoch)
+        test_model_results = self.test_model()
+        if test_model_results:
+           self._plot_figs(test_model_results, test=True)
+           log = {
+                **test_model_results['test_res'],
+                "best_eval_loss": best_eval_loss,
+                "best_eval_bps": best_eval_bps
+            }
+           wandb.log(log) if self.config.wandb.use else print(log)
         
-        if self.config.wandb.use:
-            #####
-            wandb.log({"best_eval_loss": best_eval_loss,
-                       "best_eval_bps": best_eval_bps,
-                      }
-                     )
-            #####
-
     def computer_loss(self, outputs, batch):
         loss = self.criterion(outputs, batch['ap']).mean()
         return loss
@@ -186,8 +192,56 @@ class BaseTrainer():
                 **_metrics_results
                 }
         }
-
     
+    # Test the model after training
+    @torch.no_grad()
+    def test_model(self):
+        # load the best model
+        self.model = torch.load(os.path.join(self.log_dir, "model_best.pt"))['model']
+        self.model.eval()
+        test_loss = []
+        session_results = {}
+        for eid in self.dataset_split_dict['eid']['test']:
+            session_results[eid] = {'gt': [], 'preds': []}
+        if self.test_dataloader is not None:
+            with torch.no_grad():                      
+                for batch in self.test_dataloader:
+                    outputs = self._forward_model_outputs(batch)
+                    loss = self.computer_loss(outputs, batch)
+                    # outputs = torch.exp(outputs)
+                    test_loss.append(loss.item())
+                    eid = batch['eid'][0]
+
+                    session_results[eid]["gt"].append(batch['ap'])
+                    session_results[eid]["preds"].append(outputs)
+
+            gt, preds = {}, {}
+            metrics_results = {k: [] for k in self.metric}
+            for idx, eid in enumerate(self.dataset_split_dict['eid']['test']):
+                gt[idx], preds[idx] = {}, {}
+                _gt = torch.cat(session_results[eid]["gt"], dim=0)
+                _preds = torch.cat(session_results[eid]["preds"], dim=0)
+                _preds = torch.exp(_preds)
+                gt[idx] = _gt
+                preds[idx] = _preds
+
+                results = metrics_list(
+                    gt = gt[idx].transpose(-1,0),
+                    pred = preds[idx].transpose(-1,0), 
+                    metrics=["bps"], 
+                    device=self.accelerator.device
+                )
+                metrics_results['bps'].append(results['bps'])
+        _metrics_results = {f"test_{k}": round(np.mean(v),5) for k, v in metrics_results.items()}
+        return {
+            "test_gt": gt,
+            "test_preds": preds,
+            "test_res":{
+                "test_loss": round(np.mean(test_loss),5),
+                **_metrics_results
+                }
+        }
+
     def plot_epoch(self, gt, preds, epoch, active_neurons, modality):
         
         if modality == 'ap':
