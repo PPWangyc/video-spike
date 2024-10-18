@@ -41,11 +41,29 @@ data:
     ap: 
       transform: null
       transform_kwargs: {}
+      input: False
     video: 
       transform: null
       transform_kwargs: {'ToTensor','Reshape'}
       width: 128
       height: 128
+      input: False
+    choice: 
+      transform: null
+      transform_kwargs: {}
+      input: False
+    block: 
+      transform: null
+      transform_kwargs: {}
+      input: False
+    wheel-speed: 
+      transform: null
+      transform_kwargs: {}
+      input: True
+    whisker-motion-energy: 
+      transform: null
+      transform_kwargs: {}
+      input: True
 
   # dataset_name: lorenz # Any registered dataset name.
   dataset_name: ibl # Any registered dataset name.

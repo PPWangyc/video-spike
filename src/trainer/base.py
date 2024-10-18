@@ -5,7 +5,13 @@ import os
 from utils.utils import move_batch_to_device, metrics_list, plot_gt_pred, plot_neurons_r2
 from tqdm import tqdm
 import random
-
+def _get_input_modailities(config):
+    input_modalities = []
+    avail_mod = config.data.modalities.keys()
+    for mod in avail_mod:
+        if config.data.modalities[mod]['input']:
+            input_modalities.append(mod)
+    return input_modalities
 class BaseTrainer():
     def __init__(
         self,
@@ -35,6 +41,8 @@ class BaseTrainer():
 
         self._create_log_dir()
 
+        self.input_mods = _get_input_modailities(self.config)
+
     def _create_log_dir(self):
         os.makedirs(self.log_dir, exist_ok=True)
         wandb.init(project=self.config.wandb.project, 
@@ -42,9 +50,12 @@ class BaseTrainer():
 
     
     def _forward_model_outputs(self, batch):
-                
         batch = move_batch_to_device(batch, self.accelerator.device)
-        return self.model(batch['video'])
+        _inputs = []
+        for mod in self.input_mods:
+            _inputs.append(batch[mod])
+        inputs = torch.cat(_inputs, dim=-1)
+        return self.model(inputs)
 
     def _plot_figs(self, eval_epoch_results, epoch):
         gt_pred_fig = self.plot_epoch(

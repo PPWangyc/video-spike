@@ -32,7 +32,7 @@ class BaseDataset():
         for key, value in sample.items():
             if any(mod in key for mod in self.config.data.modalities.keys()):
                 k = key.split('.')[0]
-                out[k] = self.process_modalities(value=value, mod=k)
+                out[k] = self.process_modalities(value=value, mod=k).float()
         out['eid'] = sample["__key__"].split('_')[0]
         return out
     
@@ -47,7 +47,7 @@ class BaseDataset():
             if self.config.data.modalities[mod]:
                 video, _, meta = value
                 # grayscale video only take the first channel
-                video = video[:,:,:,0].unsqueeze(1).float()
+                video = video[:,:,:,0].unsqueeze(1)
                 # transform video to (T, C, H, W)
                 # video= torch.stack([self.video_transform(v) for v in video]).float()
 
@@ -57,6 +57,14 @@ class BaseDataset():
                 # _video = _video.repeat(1,1,1,3)
                 # write_video('video.mp4', _video, fps=60)
                 return video
+        elif mod == 'wheel-speed':
+            return torch.from_numpy(value)
+        elif mod == 'whisker-motion-energy':
+            return torch.from_numpy(value)
+        elif mod == 'choice':
+            return torch.from_numpy(value)
+        elif mod == 'block':
+            return torch.from_numpy(value)
         else:
             raise NotImplementedError(f"Modality {mod} not implemented")
 

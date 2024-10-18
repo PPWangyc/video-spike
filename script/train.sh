@@ -18,9 +18,9 @@
 cd ..
 
 conda activate vs
-
-python src/train.py --model_config config/model/linear.yaml \
-                    --train_config config/train/linear.yaml 
+input_mod=$1
+python src/train.py --model_config config/model/linear_$input_mod.yaml \
+                    --train_config config/train/linear_$input_mod.yaml 
 
 cd script
 conda deactivate
