@@ -48,6 +48,7 @@ class BaseTrainer():
                                     _input_mods)
         os.makedirs(self.log_dir, exist_ok=True)
         wandb.init(project=self.config.wandb.project, 
+                   run_name="{}".format(_input_mods),
                    config=self.config) if self.config.wandb.use else None
 
     

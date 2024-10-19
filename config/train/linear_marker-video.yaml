@@ -47,7 +47,7 @@ data:
       transform_kwargs: {'ToTensor','Reshape'}
       width: 128
       height: 128
-      input: False
+      input: True
     choice: 
       transform: null
       transform_kwargs: {}

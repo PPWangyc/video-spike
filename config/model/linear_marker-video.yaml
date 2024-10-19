@@ -2,7 +2,7 @@ model_class: Linear
 
 encoder:
   type: LinearEncoder
-  input_dim: 100 # 100 * 1
+  input_dim: 1966180 # 120 * 128 * 128 + 100
   hidden_dims: [256, 128]
   output_dim: 64
   layer_num: 2
