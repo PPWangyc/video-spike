@@ -48,7 +48,7 @@ class BaseTrainer():
                                     _input_mods)
         os.makedirs(self.log_dir, exist_ok=True)
         wandb.init(project=self.config.wandb.project, 
-                   run_name="{}".format(_input_mods),
+                   name="{}".format(_input_mods),
                    config=self.config) if self.config.wandb.use else None
 
     
@@ -56,7 +56,7 @@ class BaseTrainer():
         batch = move_batch_to_device(batch, self.accelerator.device)
         _inputs = []
         for mod in self.input_mods:
-            _inputs.append(batch[mod])
+            _inputs.append(batch[mod].flatten(1))
         inputs = torch.cat(_inputs, dim=-1)
         return self.model(inputs)
 
