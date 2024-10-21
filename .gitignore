@@ -9,4 +9,6 @@ wandb/
 *.jpg
 data/
 *.mp4
+*.avi
 *.out
+*.gif
