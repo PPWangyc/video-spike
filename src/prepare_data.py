@@ -162,6 +162,7 @@ for eid_idx, eid in enumerate(include_eids):
             'cluster_depths': cluster_depths,
             'frame_time_idx': video_index_list[trial_id].tolist(),
             'interval': intervals[trial_id].tolist(),
+            'roi': roi.tolist(),
             **params
         }
         vec_field = get_optic_flow(video=whisker_video, save_path=None)
@@ -172,10 +173,10 @@ for eid_idx, eid in enumerate(include_eids):
             out_video.write(_frame)
         out_video.release()
         
-        out_whisker_video = cv2.VideoWriter('whisker_temp.mp4', cv2.VideoWriter_fourcc(*'mp4v'), 60, (whisker_video.shape[2], whisker_video.shape[1]), isColor=False)
-        for frame in whisker_video:
-            out_whisker_video.write(frame)
-        out_whisker_video.release()
+        out_whisker_of_video = cv2.VideoWriter('whisker_of_temp.mp4', cv2.VideoWriter_fourcc(*'mp4v'), 60, (vec_field.shape[2], vec_field.shape[1]), isColor=False)
+        for frame in vec_field:
+            out_whisker_of_video.write(frame)
+        out_whisker_of_video.release()
 
         trial_data = {
             'ap': spike,
@@ -201,7 +202,7 @@ for eid_idx, eid in enumerate(include_eids):
 
         # add whisker video to the tar file
         with tarfile.open(sink_path + '.tar', 'a') as tar:
-            tar.add('whisker_temp.mp4', arcname=f'{sample_key}.whisker_video.mp4')
-        os.remove('whisker_temp.mp4')
+            tar.add('whisker_of_temp.mp4', arcname=f'{sample_key}.whisker_of.mp4')
+        os.remove('whisker_of_temp.mp4')
 
 print('Done!')
