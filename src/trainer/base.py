@@ -36,7 +36,7 @@ class BaseTrainer():
         self.dataset_split_dict = kwargs.get("dataset_split_dict", None)
 
         self.model_class = self.config.model.model_class
-        self.metric = ['bps']       
+        self.metrics = ['bps','rsquared']       
         self.session_active_neurons = {}
 
         self.input_mods = _get_input_modailities(self.config)
@@ -168,7 +168,7 @@ class BaseTrainer():
                     session_results[eid]["preds"].append(outputs)
 
             gt, preds = {}, {}
-            metrics_results = {k: [] for k in self.metric}
+            metrics_results = {k: [] for k in self.metrics}
             for idx, eid in enumerate(self.dataset_split_dict['eid']['val']):
                 gt[idx], preds[idx] = {}, {}
                 _gt = torch.cat(session_results[eid]["gt"], dim=0)
@@ -180,10 +180,11 @@ class BaseTrainer():
                 results = metrics_list(
                     gt = gt[idx].transpose(-1,0),
                     pred = preds[idx].transpose(-1,0), 
-                    metrics=["bps"], 
+                    metrics=self.metrics,
                     device=self.accelerator.device
                 )
-                metrics_results['bps'].append(results['bps'])
+                for k, v in results.items():
+                    metrics_results[k].append(v)
         _metrics_results = {f"eval_{k}": round(np.mean(v),5) for k, v in metrics_results.items()}
         return {
             "eval_gt": gt,
@@ -217,7 +218,7 @@ class BaseTrainer():
                     session_results[eid]["preds"].append(outputs)
 
             gt, preds = {}, {}
-            metrics_results = {k: [] for k in self.metric}
+            metrics_results = {k: [] for k in self.metrics}
             for idx, eid in enumerate(self.dataset_split_dict['eid']['test']):
                 gt[idx], preds[idx] = {}, {}
                 _gt = torch.cat(session_results[eid]["gt"], dim=0)
@@ -229,10 +230,11 @@ class BaseTrainer():
                 results = metrics_list(
                     gt = gt[idx].transpose(-1,0),
                     pred = preds[idx].transpose(-1,0), 
-                    metrics=["bps"], 
+                    metrics=self.metrics, 
                     device=self.accelerator.device
                 )
-                metrics_results['bps'].append(results['bps'])
+                for k, v in results.items():
+                    metrics_results[k].append(v)
         _metrics_results = {f"test_{k}": round(np.mean(v),5) for k, v in metrics_results.items()}
         return {
             "test_gt": gt,

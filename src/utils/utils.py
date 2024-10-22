@@ -85,10 +85,10 @@ def metrics_list(gt, pred, metrics=["bps", "r2", "rsquared", "mse", "mae", "acc"
     results = {}
 
     if "bps" in metrics:
-        gt, pred = gt.transpose(-1,0).cpu().numpy(), pred.transpose(-1,0).cpu().numpy()
+        _gt, _pred = gt.transpose(-1,0).cpu().numpy(), pred.transpose(-1,0).cpu().numpy()
         bps_list = []
         for i in range(gt.shape[-1]): 
-            bps = bits_per_spike(pred[:,:,[i]], gt[:,:,[i]])
+            bps = bits_per_spike(_pred[:,:,[i]], _gt[:,:,[i]])
             if np.isinf(bps):
                 bps = np.nan
             bps_list.append(bps)
@@ -114,12 +114,13 @@ def metrics_list(gt, pred, metrics=["bps", "r2", "rsquared", "mse", "mae", "acc"
         
     if "rsquared" in metrics:
         r2 = 0
+        _gt, _pred = gt.cpu().clone(), pred.cpu().numpy()
         for i in range(gt.shape[-1]):
             r2_list = []
             for j in range(gt.shape[0]):
-                r2 = r2_score(y_true=gt[j,:,i], y_pred=pred[j,:,i], device=device) 
+                r2 = r2_score_sklearn(y_true=_gt[j,:,i], y_pred=_pred[j,:,i])
                 r2_list.append(r2)
-            r2 += np.mean(r2_list)
+            r2 += np.nanmean(r2_list)
         results["rsquared"] = r2 / gt.shape[-1]
         
     if "mse" in metrics:
