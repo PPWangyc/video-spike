@@ -202,7 +202,7 @@ for eid_idx, eid in enumerate(include_eids):
 
         # add whisker video to the tar file
         with tarfile.open(sink_path + '.tar', 'a') as tar:
-            tar.add('whisker_of_temp.mp4', arcname=f'{sample_key}.whisker_of.mp4')
+            tar.add('whisker_of_temp.mp4', arcname=f'{sample_key}.whisker-of.mp4')
         os.remove('whisker_of_temp.mp4')
 
 print('Done!')
