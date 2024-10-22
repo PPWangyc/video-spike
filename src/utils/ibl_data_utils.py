@@ -9,6 +9,7 @@ import multiprocessing
 from functools import partial
 from scipy.interpolate import interp1d
 import cv2
+import imageio
 
 import ibllib.io.video as vidio
 from iblutil.numerical import ismember, bincount2D
@@ -389,6 +390,32 @@ def bin_spiking_data(reg_clu_ids, neural_df, intervals=None, trials_df=None, n_w
             n_workers=n_workers)
         binned_list = [x.T for x in binned_array]   
     return np.array(binned_list), clusters_used_in_bins, intervals
+
+def load_dlc_data(one, eid, camera='left',collection='alf'):
+    """
+    Load DLC data from a specific camera for a given session.
+
+    Parameters
+    ----------
+    one : 
+    eid : str
+    camera : str
+        'leftCamera' | 'rightCamera'
+    attribute : list
+        e.g., ['dlc', 'features', 'times']
+    collection : str, optional
+        'alf' | 'raw_video_frames' | 'raw_video_data'
+
+    Returns
+    -------
+    dict
+        'times': timestamps for DLC data
+        'values': associated values
+    """
+    attribute = ['dlc', 'features', 'times']
+    camera=f'{camera}Camera'
+    dlc_data = one.load_object(eid, camera, attribute=attribute, collection=collection)
+    return dlc_data
     
 def load_target_behavior(one, eid, target):
     """
@@ -470,6 +497,30 @@ def load_target_behavior(one, eid, target):
             beh_dict = {
                 'times': dlc_right.times,
                 'values': dlc_right.features.pupilDiameter_smooth
+            }
+        elif target == 'dlc-pupil-bottom-r-y':
+            lp_left = one.load_object(eid, f'rightCamera', collection="alf")
+            beh_dict = {
+                'times': lp_left['times'],
+                'values': lp_left['dlc']['pupil_bottom_r_y']
+            }
+        elif target == 'dlc-pupil-top-r-y':
+            lp_left = one.load_object(eid, f'rightCamera', collection="alf")
+            beh_dict = {
+                'times': lp_left['times'],
+                'values': lp_left['dlc']['pupil_top_r_y']
+            }
+        elif target == 'dlc-pupil-left-r-x':
+            lp_left = one.load_object(eid, f'rightCamera', collection="alf")
+            beh_dict = {
+                'times': lp_left['times'],
+                'values': lp_left['dlc']['pupil_left_r_x']
+            }
+        elif target == 'dlc-pupil-right-r-x':
+            lp_left = one.load_object(eid, f'rightCamera', collection="alf")
+            beh_dict = {
+                'times': lp_left['times'],
+                'values': lp_left['dlc']['pupil_right_r_x']
             }
         elif target == 'lightning-pose-left-pupil-diameter':
             lp_left = one.load_object(eid, f'leftCamera', attribute=['lightningPose', 'times'])
@@ -722,15 +773,10 @@ def bin_behaviors(
     mask=None, 
     allow_nans=True, 
     n_workers=os.cpu_count(),
+    behaviors=None,
     **kwargs
 ):
-
-    behaviors = [
-        #'wheel-velocity', 
-        'wheel-speed', 
-        'whisker-motion-energy',
-        #'pupil-diameter', # 'lightning-pose-left-pupil-diameter',
-    ]
+    assert behaviors is not None, 'Require a list of behaviors to bin.'
 
     behave_dict, mask_dict = {}, {}
     
@@ -920,4 +966,87 @@ def load_video(index, url, quiet=True):
         quiet=quiet
     )
     return trial_frames
+
+def load_whisker_video(index, url, mask, quiet=True):
+    # load cropped video frames for the whisker pad ROI
+    trial_frames = vidio.get_video_frames_preload(
+        url, 
+        index, 
+        mask=mask,
+        quiet=quiet,
+        func=grayscale
+    )
+    # print(trial_frames.shape)
+    # print(trial_frames[0,:,:,0])
+    # print('-----------------')
+    # print(trial_frames[0,:,:,1])
+    # exit()
+    return trial_frames
+
+def grayscale(x):
+    return cv2.cvtColor(x, cv2.COLOR_BGR2GRAY)
     
+def get_dlc_midpoints(dlc_df, target):
+    # Load dataframe
+    # dlc_df = pd.read_parquet(dlc_pqt)
+    # Set values to nan if likelihood is too low and calcualte midpoints
+    idx = dlc_df.loc[dlc_df[f'{target}_likelihood'] < 0.9].index
+    dlc_df.loc[idx, [f'{target}_x', f'{target}_y']] = np.nan
+    if all(np.isnan(dlc_df[f'{target}_x'])) or all(np.isnan(dlc_df[f'{target}_y'])):
+        raise ValueError(f'Failed to calculate midpoint, {target} all NaN in DLC data')
+    else:
+        mloc = [int(np.nanmean(dlc_df[f'{target}_x'])), int(np.nanmean(dlc_df[f'{target}_y']))]
+        return mloc
+
+def get_whisker_pad_roi(one, eid, camera):
+    # load DLC data
+    dlc_data = load_dlc_data(one, eid, camera)['dlc']
+    nose_mid = get_dlc_midpoints(dlc_data, 'nose_tip')
+    # Go through the different pupil points to see if any has not all NaN values
+    try:
+        pupil_mid = get_dlc_midpoints(dlc_data, 'pupil_top_r')
+    except ValueError:
+        try:
+            pupil_mid = get_dlc_midpoints(dlc_data, 'pupil_left_r')
+        except ValueError:
+            try:
+                pupil_mid = get_dlc_midpoints(dlc_data, 'pupil_right_r')
+            except ValueError:
+                try:
+                    pupil_mid = get_dlc_midpoints(dlc_data, 'pupil_bottom_r')
+                except ValueError:
+                    pupil_mid = None
+    assert nose_mid is not None, 'Nose midpoint is None'
+    assert pupil_mid is not None, 'Pupil midpoint is None'
+    anchor = np.mean([nose_mid, pupil_mid], axis=0)
+    dist = np.sqrt(np.sum((np.array(nose_mid) - np.array(pupil_mid))**2, axis=0))
+    w, h = int(dist / 2), int(dist / 3)
+    x, y = int(anchor[0] - dist / 4), int(anchor[1])
+
+    # Check if the mask has negative values (sign that the midpoint location is off)
+    if any(i < 0 for i in [x, y, w, h]) is True:
+        raise ValueError(f"ROI for motion energy on {camera}Camera could not be computed. "
+                         f"Check for issues with the raw video or dlc output.")
+    # Note that x and y are flipped when loading with cv2, therefore:
+    mask = np.s_[y:y + h, x:x + w]
+    roi = np.asarray([w, h, x, y])
+    return roi, mask
+
+def get_optic_flow(video, save_path=None, fps=60):
+    vec_field = []
+    for i in range(len(video) - 1):
+        frame1 = video[i]
+        frame2 = video[i + 1]
+        flow = cv2.calcOpticalFlowFarneback(frame1, frame2, None, 0.5, 3, 15, 3, 5, 1.2, 0)
+        vec_field.append(np.abs(flow).sum(2))
+    vec_field = np.array(vec_field)
+    # normalize the vectors
+    vec_field = cv2.normalize(vec_field, None, 0, 255, cv2.NORM_MINMAX)
+    vec_field = vec_field.astype(np.uint8)
+    if save_path:
+        # left raw video, right optical flow
+        video = video[1:]
+        video = np.concatenate([video, vec_field], axis=2)
+        # save video to gif
+        imageio.mimsave(save_path, video, fps=fps, loop=0)
+    return vec_field

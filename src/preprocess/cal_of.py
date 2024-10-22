@@ -38,8 +38,9 @@ for batch in test_dataloader:
     imageio.mimsave(f'output_{count}.gif', video, fps=60, loop=0)
     
     # save video to mp4
-    # out = cv2.VideoWriter('output.mp4', cv2.VideoWriter_fourcc(*'mp4v'), 60, (video.shape[2], video.shape[1]), isColor=False)
-    # for i in range(video.shape[0]):
-    #     out.write(video[i])
-    # out.release()
+    out = cv2.VideoWriter('output_{count}.mp4', cv2.VideoWriter_fourcc(*'mp4v'), 60, (video.shape[2], video.shape[1]), isColor=False)
+    for i in range(video.shape[0]):
+        out.write(video[i])
+    out.release()
     count += 1
+    break

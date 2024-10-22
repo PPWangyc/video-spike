@@ -14,7 +14,10 @@ from utils.ibl_data_utils import (
     bin_behaviors,
     align_spike_behavior,
     load_video,
-    load_video_index
+    load_video_index,
+    get_whisker_pad_roi,
+    load_whisker_video,
+    get_optic_flow
 )
 import json
 import webdataset as wds
@@ -72,9 +75,10 @@ params = {
 beh_names = [
     'choice', 'reward', 'block', 
     'wheel-speed', 'whisker-motion-energy', #'body-motion-energy', 
+    # 'dlc-pupil-bottom-r-y','dlc-pupil-top-r-y', 'dlc-pupil-left-r-x', 'dlc-pupil-right-r-x',
     #'pupil-diameter', # Some sessions do not have pupil traces
 ]
-
+camera = 'left'
 for eid_idx, eid in enumerate(include_eids):
 
     # try: 
@@ -93,7 +97,10 @@ for eid_idx, eid in enumerate(include_eids):
     )
 
     # load video index list
-    video_index_list, url = load_video_index(one, eid, 'left', intervals)
+    video_index_list, url = load_video_index(one, eid, camera, intervals)
+    # get whisker pad roi
+    roi, mask = get_whisker_pad_roi(one, eid, camera)
+    
 
     # avg_fr = binned_spikes.sum(1).mean(0) / params['interval_len']
     # active_neuron_ids = np.argwhere(avg_fr > 1/params['fr_thresh']).flatten()
@@ -101,7 +108,7 @@ for eid_idx, eid in enumerate(include_eids):
     # print(f'# of neurons left after filtering out inactive ones: {binned_spikes.shape[-1]}/{len(avg_fr)}.')
   
     binned_behaviors, behavior_masks = bin_behaviors(
-        one, eid, beh_names[3:], trials_df=trials_data['trials_df'], 
+        one, eid, behaviors=beh_names[3:], trials_df=trials_data['trials_df'], 
         allow_nans=True, n_workers=args.n_workers, **params
     )
 
@@ -135,6 +142,8 @@ for eid_idx, eid in enumerate(include_eids):
         beh = {key: aligned_binned_behaviors[key][trial_id] for key in beh_names}
         # trial video
         trial_video = load_video(video_index_list[trial_id], url)
+        # load whisker video
+        whisker_video = load_whisker_video(video_index_list[trial_id], url, mask)
         # check shape
         assert spike.shape[0] == beh['wheel-speed'].shape[0]
         eid = meta_data['eid']
@@ -151,17 +160,23 @@ for eid_idx, eid in enumerate(include_eids):
             'cluster_regions': cluster_regions,
             'good_clusters': good_clusters,
             'cluster_depths': cluster_depths,
+            'frame_time_idx': video_index_list[trial_id].tolist(),
+            'interval': intervals[trial_id].tolist(),
             **params
         }
-        _, h, w = trial_video.shape
-        print(trial_video.shape)
-
+        vec_field = get_optic_flow(video=whisker_video, save_path=None)
 
         out_video = cv2.VideoWriter('temp.mp4', cv2.VideoWriter_fourcc(*'mp4v'), 60, (128, 128), isColor=False)
         for frame in trial_video:
             _frame = cv2.resize(frame, (128, 128))
             out_video.write(_frame)
         out_video.release()
+        
+        out_whisker_video = cv2.VideoWriter('whisker_temp.mp4', cv2.VideoWriter_fourcc(*'mp4v'), 60, (whisker_video.shape[2], whisker_video.shape[1]), isColor=False)
+        for frame in whisker_video:
+            out_whisker_video.write(frame)
+        out_whisker_video.release()
+
         trial_data = {
             'ap': spike,
             **beh
@@ -184,35 +199,9 @@ for eid_idx, eid in enumerate(include_eids):
             tar.add('temp.mp4', arcname=f'{sample_key}.video.mp4')
         os.remove('temp.mp4')
 
-    # train_dataset = create_dataset(
-    #     aligned_binned_spikes[train_idxs], bwm_df, eid, params, 
-    #     binned_behaviors=train_beh, meta_data=meta_data,
-    # )
-    # val_dataset = create_dataset(
-    #     aligned_binned_spikes[val_idxs], bwm_df, eid, params, 
-    #     binned_behaviors=val_beh, meta_data=meta_data,
-    #     binned_lfp=aligned_binned_lfp[val_idxs]
-    # )
-    # test_dataset = create_dataset(
-    #     aligned_binned_spikes[test_idxs], bwm_df, eid, params, 
-    #     binned_behaviors=test_beh, meta_data=meta_data,
-    #     binned_lfp=aligned_binned_lfp[test_idxs]
-    # )
+        # add whisker video to the tar file
+        with tarfile.open(sink_path + '.tar', 'a') as tar:
+            tar.add('whisker_temp.mp4', arcname=f'{sample_key}.whisker_video.mp4')
+        os.remove('whisker_temp.mp4')
 
-    # # Create dataset
-    # partitioned_dataset = DatasetDict({
-    #     'train': train_dataset,
-    #     'val': val_dataset,
-    #     'test': test_dataset}
-    # )
-    # print(partitioned_dataset)
-
-    # # Upload dataset
-    # upload_dataset(partitioned_dataset, org=args.huggingface_org, eid=f'{eid}_aligned')
-
-    # print(f'Uploaded session {eid}.')
-    # print(f'Progress: {eid_idx+1} / {len(include_eids)} sessions uploaded.')
-            
-    # except Exception as e:
-    #     print(f'Skipped session {eid} due to unexpected error: ', e)
-
+print('Done!')
