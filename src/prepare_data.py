@@ -185,7 +185,7 @@ for eid_idx, eid in enumerate(include_eids):
         out_whisker_of_video.release()
         for key, value in beh.items():
             print(f'{key}: {value.shape}')
-        exit()
+
         trial_data = {
             'ap': spike,
             'of': vec_field,
