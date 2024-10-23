@@ -67,6 +67,10 @@ data:
     whisker-of: 
       transform: null
       transform_kwargs: {}
+      input: False
+    of: 
+      transform: null
+      transform_kwargs: {}
       input: True
 
   # dataset_name: lorenz # Any registered dataset name.

@@ -62,6 +62,8 @@ class BaseDataset():
             # grayscale video only take the first channel
             video = video[:,:,:,0].unsqueeze(1)
             return video
+        elif mod == 'of':
+            return torch.from_numpy(value)
         elif mod == 'wheel-speed':
             return torch.from_numpy(value)
         elif mod == 'whisker-motion-energy':
