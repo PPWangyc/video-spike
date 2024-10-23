@@ -165,7 +165,7 @@ for eid_idx, eid in enumerate(include_eids):
             'roi': roi.tolist(),
             **params
         }
-        vec_field = get_optic_flow(video=whisker_video, save_path=None)
+        vec_field, vec_heatmap = get_optic_flow(video=whisker_video, save_path=None)
 
         out_video = cv2.VideoWriter('temp.mp4', cv2.VideoWriter_fourcc(*'mp4v'), 60, (128, 128), isColor=False)
         for frame in trial_video:
@@ -173,13 +173,14 @@ for eid_idx, eid in enumerate(include_eids):
             out_video.write(_frame)
         out_video.release()
         
-        out_whisker_of_video = cv2.VideoWriter('whisker_of_temp.mp4', cv2.VideoWriter_fourcc(*'mp4v'), 60, (vec_field.shape[2], vec_field.shape[1]), isColor=False)
-        for frame in vec_field:
+        out_whisker_of_video = cv2.VideoWriter('whisker_of_temp.mp4', cv2.VideoWriter_fourcc(*'mp4v'), 60, (vec_heatmap.shape[2], vec_heatmap.shape[1]), isColor=False)
+        for frame in vec_heatmap:
             out_whisker_of_video.write(frame)
         out_whisker_of_video.release()
 
         trial_data = {
             'ap': spike,
+            'of': vec_field,
             **beh
         }
         # each key in trial_data add .pyd

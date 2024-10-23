@@ -1033,20 +1033,26 @@ def get_whisker_pad_roi(one, eid, camera):
     return roi, mask
 
 def get_optic_flow(video, save_path=None, fps=60):
+    vec_heatmap = []
     vec_field = []
     for i in range(len(video) - 1):
         frame1 = video[i]
         frame2 = video[i + 1]
         flow = cv2.calcOpticalFlowFarneback(frame1, frame2, None, 0.5, 3, 15, 3, 5, 1.2, 0)
-        vec_field.append(np.abs(flow).sum(2))
-    vec_field = np.array(vec_field)
+        vec_heatmap.append(np.abs(flow).sum(2))
+        vec_field.append(flow)
+    vec_heatmap = np.array(vec_heatmap)
     # normalize the vectors
-    vec_field = cv2.normalize(vec_field, None, 0, 255, cv2.NORM_MINMAX)
-    vec_field = vec_field.astype(np.uint8)
+    vec_heatmap = cv2.normalize(vec_heatmap, None, 0, 255, cv2.NORM_MINMAX)
+    vec_heatmap = vec_heatmap.astype(np.uint8)
+    vec_field = np.array(vec_field) # frame, height, width, 2
+    # get mean x, y vectors of each frame
+    vec_field = np.mean(vec_field, axis=(1, 2))
+
     if save_path:
         # left raw video, right optical flow
         video = video[1:]
-        video = np.concatenate([video, vec_field], axis=2)
+        video = np.concatenate([video, vec_heatmap], axis=2)
         # save video to gif
         imageio.mimsave(save_path, video, fps=fps, loop=0)
-    return vec_field
+    return vec_field, vec_heatmap
