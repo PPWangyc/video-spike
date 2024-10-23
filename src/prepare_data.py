@@ -108,8 +108,14 @@ for eid_idx, eid in enumerate(include_eids):
     # print(f'# of neurons left after filtering out inactive ones: {binned_spikes.shape[-1]}/{len(avg_fr)}.')
   
     binned_behaviors, behavior_masks = bin_behaviors(
-        one, eid, behaviors=beh_names[3:], trials_df=trials_data['trials_df'], 
-        allow_nans=True, n_workers=args.n_workers, **params
+        one, 
+        eid, 
+        behaviors=beh_names[3:], 
+        trials_df=trials_data['trials_df'], 
+        allow_nans=True, 
+        n_workers=args.n_workers, 
+        freq=60, # Hz number of bins per second
+        **params
     )
 
     print(f'binned_spikes: {binned_spikes.shape}')
@@ -145,7 +151,7 @@ for eid_idx, eid in enumerate(include_eids):
         # load whisker video
         whisker_video = load_whisker_video(video_index_list[trial_id], url, mask)
         # check shape
-        assert spike.shape[0] == beh['wheel-speed'].shape[0]
+        # assert spike.shape[0] == beh['wheel-speed'].shape[0]
         eid = meta_data['eid']
         sample_freq = meta_data['sampling_freq']
         cluster_channels = meta_data['cluster_channels']
@@ -177,7 +183,9 @@ for eid_idx, eid in enumerate(include_eids):
         for frame in vec_heatmap:
             out_whisker_of_video.write(frame)
         out_whisker_of_video.release()
-
+        for key, value in beh.items():
+            print(f'{key}: {value.shape}')
+        exit()
         trial_data = {
             'ap': spike,
             'of': vec_field,

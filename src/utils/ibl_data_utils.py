@@ -604,6 +604,7 @@ def get_behavior_per_interval(
     intervals=None, 
     trials_df=None, 
     allow_nans=False, 
+    freq=60,
     n_workers=os.cpu_count(), 
     **kwargs
 ):
@@ -667,7 +668,9 @@ def get_behavior_per_interval(
         return target_times_list, target_vals_list, good_interval
 
     # np.ceil because we want to make sure our bins contain all data
-    n_bins = int(np.ceil(interval_len / binsize))
+    # n_bins = int(np.ceil(interval_len / binsize))
+    n_bins = int(freq * interval_len)
+    binsize = interval_len / n_bins
 
     # split data into intervals
     idxs_beg = np.searchsorted(target_times, interval_begs, side='right')
@@ -774,6 +777,7 @@ def bin_behaviors(
     allow_nans=True, 
     n_workers=os.cpu_count(),
     behaviors=None,
+    freq=60,
     **kwargs
 ):
     assert behaviors is not None, 'Require a list of behaviors to bin.'
@@ -811,8 +815,14 @@ def bin_behaviors(
             target_dict = load_target_behavior(one, eid, beh)
         target_times, target_vals = target_dict['times'], target_dict['values']
         target_times_list, target_vals_list, target_mask, skip_reasons = get_behavior_per_interval(
-            target_times, target_vals, intervals=intervals, 
-            trials_df=trials_df, allow_nans=allow_nans, n_workers=n_workers, **kwargs
+            target_times, 
+            target_vals, 
+            intervals=intervals, 
+            trials_df=trials_df, 
+            allow_nans=allow_nans, 
+            n_workers=n_workers, 
+            freq=freq,
+            **kwargs
         )
         behave_dict.update({beh: np.array(target_vals_list, dtype=object)})
         mask_dict.update({beh: target_mask})
