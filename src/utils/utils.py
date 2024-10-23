@@ -115,13 +115,18 @@ def metrics_list(gt, pred, metrics=["bps", "r2", "rsquared", "mse", "mae", "acc"
     if "rsquared" in metrics:
         r2 = 0
         _gt, _pred = gt.cpu().clone(), pred.cpu().numpy()
+        r2_list = []
         for i in range(gt.shape[-1]):
-            r2_list = []
-            for j in range(gt.shape[0]):
-                r2 = r2_score_sklearn(y_true=_gt[j,:,i], y_pred=_pred[j,:,i])
-                r2_list.append(r2)
-            r2 += np.nanmean(r2_list)
-        results["rsquared"] = r2 / gt.shape[-1]
+            r2 = r2_score_sklearn(y_true=_gt[:,:,i], y_pred=_pred[:,:,i])
+            r2_list.append(r2)
+        # for i in range(gt.shape[-1]):
+        #     r2_list = []
+        #     for j in range(gt.shape[0]):
+        #         r2 = r2_score_sklearn(y_true=_gt[j,:,i], y_pred=_pred[j,:,i])
+        #         r2_list.append(r2)
+        #     r2 += np.nanmean(r2_list)
+        # results["rsquared"] = r2 / gt.shape[-1]
+        results["rsquared"] = np.nanmean(r2_list)
         
     if "mse" in metrics:
         mse = torch.mean((gt - pred) ** 2)
