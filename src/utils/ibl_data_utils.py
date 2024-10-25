@@ -1045,12 +1045,48 @@ def get_whisker_pad_roi(one, eid, camera):
 def get_optic_flow(video, save_path=None, fps=60):
     vec_heatmap = []
     vec_field = []
+    scale = 5  # scale for drawing arrows
+    step_size = 16
+    h, w = video[0].shape[:2]
+
+    me = np.mean(np.abs(np.diff(video, axis=0)), axis=(1, 2))
+    # Normalize the motion energy values to the height of the video for visualization
+    normalized_me = np.interp(me, (np.min(me), np.max(me)), (0, h))
+
+    graph_width = 200  # Width of the motion energy graph
+    output_width = w + graph_width
+    output_height = h
     for i in range(len(video) - 1):
         frame1 = video[i]
         frame2 = video[i + 1]
         flow = cv2.calcOpticalFlowFarneback(frame1, frame2, None, 0.5, 3, 15, 3, 5, 1.2, 0)
+        # Draw optical flow arrows
+        for y in range(0, h, step_size):
+            for x in range(0, w, step_size):
+                pt1 = (x, y)
+                pt2 = (int(x + flow[y, x, 0] * scale), int(y + flow[y, x, 1] * scale))
+                cv2.arrowedLine(video[i], pt1, pt2, (255, 0, 0), 1)
+        # vec_video.append(new_frame)
         vec_heatmap.append(np.abs(flow).sum(2))
         vec_field.append(flow)
+    out = cv2.VideoWriter('output.mp4', cv2.VideoWriter_fourcc(*'mp4v'), fps, (w, h), isColor=True)
+    new_video = []
+    for i, frame in enumerate(video):
+        # Create a canvas for the graph
+        graph_canvas = np.zeros((h, graph_width, 3), dtype=np.uint8)
+        # Draw the motion energy graph
+        for y in range(h):
+            cv2.line(graph_canvas, (0, y), (int(normalized_me[i]), y), (255, 255, 255), 1)
+        # Combine the video frame and the graph
+        rgb_frame = cv2.cvtColor(frame, cv2.COLOR_GRAY2RGB)
+        combined_frame = np.hstack((rgb_frame, graph_canvas))
+        new_video.append(combined_frame)
+        out.write(combined_frame)
+    out.release()
+    video = np.array(new_video)
+    print(video.shape)
+    imageio.mimsave('output_c.gif', video, fps=fps, loop=0)
+    exit()
     vec_heatmap = np.array(vec_heatmap)
     # normalize the vectors
     vec_heatmap = cv2.normalize(vec_heatmap, None, 0, 255, cv2.NORM_MINMAX)
