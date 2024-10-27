@@ -17,7 +17,8 @@ from utils.ibl_data_utils import (
     load_video_index,
     get_whisker_pad_roi,
     load_whisker_video,
-    get_optic_flow
+    get_optic_flow,
+    load_behavior
 )
 import json
 import webdataset as wds
@@ -146,6 +147,7 @@ for eid_idx, eid in enumerate(include_eids):
         spike = aligned_binned_spikes[trial_id]
         # trial behavior
         beh = {key: aligned_binned_behaviors[key][trial_id] for key in beh_names}
+        beh['whisker-motion-energy'] = load_behavior(one, eid, 'whisker-motion-energy', video_index_list[trial_id])
         # trial video
         trial_video = load_video(video_index_list[trial_id], url)
         # load whisker video
@@ -171,8 +173,8 @@ for eid_idx, eid in enumerate(include_eids):
             'roi': roi.tolist(),
             **params
         }
-        vec_field, vec_heatmap = get_optic_flow(video=whisker_video, save_path=None)
-
+        vec_field, vec_heatmap = get_optic_flow(video=whisker_video, save_path=f'{trial_id}.gif')
+        continue
         out_video = cv2.VideoWriter('temp.mp4', cv2.VideoWriter_fourcc(*'mp4v'), 60, (128, 128), isColor=False)
         for frame in trial_video:
             _frame = cv2.resize(frame, (128, 128))

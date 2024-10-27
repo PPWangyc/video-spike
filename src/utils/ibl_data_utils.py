@@ -18,6 +18,9 @@ from brainbox.io.one import SpikeSortingLoader, SessionLoader
 from iblatlas.regions import BrainRegions
 from brainbox.population.decode import get_spike_counts_in_bins
 
+import matplotlib.pyplot as plt
+from matplotlib import animation
+
 
 def globalize(func):
   def result(*args, **kwargs):
@@ -986,11 +989,9 @@ def load_whisker_video(index, url, mask, quiet=True):
         quiet=quiet,
         func=grayscale
     )
-    # print(trial_frames.shape)
     # print(trial_frames[0,:,:,0])
     # print('-----------------')
     # print(trial_frames[0,:,:,1])
-    # exit()
     return trial_frames
 
 def grayscale(x):
@@ -1042,20 +1043,70 @@ def get_whisker_pad_roi(one, eid, camera):
     roi = np.asarray([w, h, x, y])
     return roi, mask
 
+def load_behavior(one, eid, target, idx, camera='left', collection='alf'):
+    """
+    Load behavior data from a specific camera for a given session.
+
+    Parameters
+    ----------
+    one : 
+    eid : str
+    camera : str
+        'leftCamera' | 'rightCamera'
+    attribute : list
+        e.g., ['dlc', 'features', 'times']
+    collection : str, optional
+        'alf' | 'raw_video_frames' | 'raw_video_data'
+
+    Returns
+    -------
+    dict
+        'times': timestamps for behavior signal
+        'values': associated values
+        'skip': bool, True if there was an error loading data
+    """
+
+    # To load wheel and motion energy, we just use the SessionLoader, e.g.
+    sess_loader = SessionLoader(one, eid=eid)
+    
+    # wheel is a dataframe that contains wheel times and position interpolated to a uniform sampling rate, velocity and
+    # acceleration computed using Gaussian smoothing
+    avail_targets = [
+        'wheel-position', 'wheel-velocity', 'wheel-speed',
+        'whisker-motion-energy', 'left-pupil-diameter', 'right-pupil-diameter',
+    ]
+    assert target in avail_targets, f'{target} not in {avail_targets}'
+    if target == 'wheel-position':
+        sess_loader.load_wheel()
+        return sess_loader.wheel['position'].to_numpy()[idx]
+    elif target == 'wheel-velocity':
+        sess_loader.load_wheel()
+        return sess_loader.wheel['velocity'].to_numpy()[idx]
+    elif target == 'wheel-speed':
+        sess_loader.load_wheel()
+        return np.abs(sess_loader.wheel['velocity'].to_numpy()[idx])
+    elif target == 'whisker-motion-energy':
+        sess_loader.load_motion_energy(views=[camera])
+        return sess_loader.motion_energy[f'{camera}Camera']['whiskerMotionEnergy'].to_numpy()[idx]
+    elif target == 'left-pupil-diameter':
+        dlc_left = one.load_object(eid, "leftCamera", attribute=["dlc", "features", "times"], collection=collection)
+        return dlc_left.features.pupilDiameter_smooth.to_numpy()[idx]
+    elif target == 'right-pupil-diameter':
+        dlc_right = one.load_object(eid, "rightCamera", attribute=["dlc", "features", "times"], collection=collection)
+        return dlc_right.features.pupilDiameter_smooth.to_numpy()[idx]
+    else:
+        raise NotImplementedError
+
 def get_optic_flow(video, save_path=None, fps=60):
     vec_heatmap = []
     vec_field = []
     scale = 5  # scale for drawing arrows
     step_size = 16
     h, w = video[0].shape[:2]
-
+    video = video.astype(np.float32)
     me = np.mean(np.abs(np.diff(video, axis=0)), axis=(1, 2))
-    # Normalize the motion energy values to the height of the video for visualization
-    normalized_me = np.interp(me, (np.min(me), np.max(me)), (0, h))
-
-    graph_width = 200  # Width of the motion energy graph
-    output_width = w + graph_width
-    output_height = h
+    # normalize the motion energy
+    me = (me - np.min(me)) / (np.max(me) - np.min(me))
     for i in range(len(video) - 1):
         frame1 = video[i]
         frame2 = video[i + 1]
@@ -1069,36 +1120,48 @@ def get_optic_flow(video, save_path=None, fps=60):
         # vec_video.append(new_frame)
         vec_heatmap.append(np.abs(flow).sum(2))
         vec_field.append(flow)
-    out = cv2.VideoWriter('output.mp4', cv2.VideoWriter_fourcc(*'mp4v'), fps, (w, h), isColor=True)
-    new_video = []
-    for i, frame in enumerate(video):
-        # Create a canvas for the graph
-        graph_canvas = np.zeros((h, graph_width, 3), dtype=np.uint8)
-        # Draw the motion energy graph
-        for y in range(h):
-            cv2.line(graph_canvas, (0, y), (int(normalized_me[i]), y), (255, 255, 255), 1)
-        # Combine the video frame and the graph
-        rgb_frame = cv2.cvtColor(frame, cv2.COLOR_GRAY2RGB)
-        combined_frame = np.hstack((rgb_frame, graph_canvas))
-        new_video.append(combined_frame)
-        out.write(combined_frame)
-    out.release()
-    video = np.array(new_video)
-    print(video.shape)
-    imageio.mimsave('output_c.gif', video, fps=fps, loop=0)
-    exit()
-    vec_heatmap = np.array(vec_heatmap)
-    # normalize the vectors
-    vec_heatmap = cv2.normalize(vec_heatmap, None, 0, 255, cv2.NORM_MINMAX)
-    vec_heatmap = vec_heatmap.astype(np.uint8)
     vec_field = np.array(vec_field) # frame, height, width, 2
-    # get mean x, y vectors of each frame
-    vec_field = np.mean(vec_field, axis=(1, 2))
+    vec_field = np.mean(np.abs(vec_field), axis=(1,2,3))
+    # normalize the vectors
+    vec_field = (vec_field - np.min(vec_field)) / (np.max(vec_field) - np.min(vec_field))
+    me = np.append(me, me[-1])
+    vec_field = np.append(vec_field, vec_field[-1])
+    dpi = 200
+    fig, ax = plt.subplots(figsize=(w/dpi, h/dpi), dpi=dpi)
+    line_me, = ax.plot([], [], lw=.5)
+    line_of, = ax.plot([], [], lw=.5)
+    line_me.set_color('r')
+    line_of.set_color('b')
+    # set legend
+    ax.legend(['Motion Energy', 'Optical Flow'], fontsize=2.5, loc='upper left')
+    ax.set_ylim(0, 1)
+    ax.set_xlim(0, len(me))
+    # set x ticks size
+    ax.tick_params(axis='x', labelsize=3)
+    # set y ticks size
+    ax.tick_params(axis='y', labelsize=3)
+    def init():
+        line_me.set_data([], [])
+        return line_me,
+    def animate(i):
+        line_me.set_data(np.arange(i), me[:i])
+        line_of.set_data(np.arange(i), vec_field[:i])
+        return line_me,
+    ani = animation.FuncAnimation(fig, animate, frames=len(me), init_func=init, blit=True)
+    # save as gif
+    ani.save('output_ani.gif', writer='imagemagick', fps=fps)
+    imageio.mimsave('output_vid.gif', video, fps=fps, loop=0)
+    # load the gif
+    vid_gif = imageio.mimread('output_vid.gif')
+    ani_gif = imageio.mimread('output_ani.gif')
+    print(len(vid_gif), len(ani_gif))
+    print(vid_gif[0].shape, ani_gif[0].shape)
+    # combine frames side by side
+    combined_gif = [np.hstack([vid_gif[i], ani_gif[i]]) for i in range(len(vid_gif)-1)]
+    # remove the temporary files
+    os.remove('output_ani.gif')
+    os.remove('output_vid.gif')
 
     if save_path:
-        # left raw video, right optical flow
-        video = video[1:]
-        video = np.concatenate([video, vec_heatmap], axis=2)
-        # save video to gif
-        imageio.mimsave(save_path, video, fps=fps, loop=0)
-    return vec_field, vec_heatmap
+        imageio.mimsave(save_path, combined_gif, fps=fps, loop=0)
+    return vec_field, None
