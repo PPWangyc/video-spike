@@ -10,6 +10,7 @@ from functools import partial
 from scipy.interpolate import interp1d
 import cv2
 import imageio
+from PIL import Image
 
 import ibllib.io.video as vidio
 from iblutil.numerical import ismember, bincount2D
@@ -20,6 +21,7 @@ from brainbox.population.decode import get_spike_counts_in_bins
 
 import matplotlib.pyplot as plt
 from matplotlib import animation
+from matplotlib.animation import FFMpegWriter
 
 
 def globalize(func):
@@ -1097,13 +1099,14 @@ def load_behavior(one, eid, target, idx, camera='left', collection='alf'):
     else:
         raise NotImplementedError
 
-def get_optic_flow(video, save_path=None, fps=60):
+def get_optic_flow(video, save_path=None, fps=60, ses='', trial=''):
     vec_heatmap = []
     vec_field = []
     scale = 5  # scale for drawing arrows
     step_size = 16
     h, w = video[0].shape[:2]
     video = video.astype(np.float32)
+    raw_video = video.copy()
     me = np.mean(np.abs(np.diff(video, axis=0)), axis=(1, 2))
     # normalize the motion energy
     me = (me - np.min(me)) / (np.max(me) - np.min(me))
@@ -1120,48 +1123,126 @@ def get_optic_flow(video, save_path=None, fps=60):
         # vec_video.append(new_frame)
         vec_heatmap.append(np.abs(flow).sum(2))
         vec_field.append(flow)
+    vec_field = np.abs(vec_field)
     vec_field = np.array(vec_field) # frame, height, width, 2
+    vec_x_med = np.median(vec_field[..., 0], axis=(1,2))
+    vec_y_med = np.median(vec_field[..., 1], axis=(1,2))
+    # only take 90% of the x, y vecors
+    clip_vec_field = vec_field.copy()
+    clip_vec_field[..., 0] = np.clip(clip_vec_field[..., 0], np.percentile(clip_vec_field[..., 0], 10), np.percentile(clip_vec_field[..., 0], 90))
+    clip_vec_field[..., 1] = np.clip(clip_vec_field[..., 1], np.percentile(clip_vec_field[..., 1], 10), np.percentile(clip_vec_field[..., 1], 90))    
+    clip_vec_field = np.mean(np.abs(clip_vec_field), axis=(1,2,3))
     vec_field = np.mean(np.abs(vec_field), axis=(1,2,3))
     # normalize the vectors
     vec_field = (vec_field - np.min(vec_field)) / (np.max(vec_field) - np.min(vec_field))
+    vec_x_med = (vec_x_med - np.min(vec_x_med)) / (np.max(vec_x_med) - np.min(vec_x_med))
+    vec_y_med = (vec_y_med - np.min(vec_y_med)) / (np.max(vec_y_med) - np.min(vec_y_med))
+    clip_vec_field = (clip_vec_field - np.min(clip_vec_field)) / (np.max(clip_vec_field) - np.min(clip_vec_field))
     me = np.append(me, me[-1])
     vec_field = np.append(vec_field, vec_field[-1])
-    dpi = 200
-    fig, ax = plt.subplots(figsize=(w/dpi, h/dpi), dpi=dpi)
-    line_me, = ax.plot([], [], lw=.5)
-    line_of, = ax.plot([], [], lw=.5)
-    line_me.set_color('r')
-    line_of.set_color('b')
-    # set legend
-    ax.legend(['Motion Energy', 'Optical Flow'], fontsize=2.5, loc='upper left')
-    ax.set_ylim(0, 1)
-    ax.set_xlim(0, len(me))
-    # set x ticks size
-    ax.tick_params(axis='x', labelsize=3)
-    # set y ticks size
-    ax.tick_params(axis='y', labelsize=3)
-    def init():
-        line_me.set_data([], [])
-        return line_me,
-    def animate(i):
-        line_me.set_data(np.arange(i), me[:i])
-        line_of.set_data(np.arange(i), vec_field[:i])
-        return line_me,
-    ani = animation.FuncAnimation(fig, animate, frames=len(me), init_func=init, blit=True)
-    # save as gif
-    ani.save('output_ani.gif', writer='imagemagick', fps=fps)
-    imageio.mimsave('output_vid.gif', video, fps=fps, loop=0)
-    # load the gif
-    vid_gif = imageio.mimread('output_vid.gif')
-    ani_gif = imageio.mimread('output_ani.gif')
-    print(len(vid_gif), len(ani_gif))
-    print(vid_gif[0].shape, ani_gif[0].shape)
-    # combine frames side by side
-    combined_gif = [np.hstack([vid_gif[i], ani_gif[i]]) for i in range(len(vid_gif)-1)]
-    # remove the temporary files
-    os.remove('output_ani.gif')
-    os.remove('output_vid.gif')
-
+    vec_x_med = np.append(vec_x_med, vec_x_med[-1])
+    vec_y_med = np.append(vec_y_med, vec_y_med[-1])
+    clip_vec_field = np.append(clip_vec_field, clip_vec_field[-1])
     if save_path:
-        imageio.mimsave(save_path, combined_gif, fps=fps, loop=0)
+        fig, ax = plt.subplots()
+        line_me, = ax.plot([], [])
+        line_of, = ax.plot([], [])
+        line_clip_of, = ax.plot([], [])
+        line_me.set_color('r')
+        line_of.set_color('b')
+        line_clip_of.set_color('g')
+        # set legend
+        ax.legend(['Motion Energy', 'Optical Flow', 'Clip OF[0.1, 0.9]'],loc='upper left')
+        # Text Object
+        frame_text = fig.text(0.02, 0.95, '', fontsize=12)
+        # set title
+        ax.set_title('ME and Mean Abs OF')
+        ax.set_ylim(0, 1)
+        ax.set_xlim(0, len(me))
+        # set x ticks size
+        ax.tick_params(axis='x')
+        # set y ticks size
+        ax.tick_params(axis='y')
+        def init():
+            line_me.set_data([], [])
+            line_of.set_data([], [])
+            line_clip_of.set_data([], [])
+            return line_me, line_of
+        def animate(i):
+            frame = i + 1
+            line_me.set_data(np.arange(frame), me[:frame])
+            line_of.set_data(np.arange(frame), vec_field[:frame])
+            line_clip_of.set_data(np.arange(frame), clip_vec_field[:frame])
+            frame_text.set_text(f'Frame: {frame}')
+            return line_me, line_of, line_clip_of
+        ani = animation.FuncAnimation(fig, animate, frames=len(me), init_func=init, blit=True)
+        # save as gif
+        ani.save('output_ani.gif', writer='pillow', fps=fps)
+
+        # create a new figure
+        fig, ax = plt.subplots()
+        line_x, = ax.plot([], [])
+        line_y, = ax.plot([], [])
+        line_x.set_color('r')
+        line_y.set_color('b')
+        # set legend
+        ax.legend(['Vec X', 'Vec Y'],loc='upper left')
+        # Text Object
+        frame_text = fig.text(0.02, 0.95, '', fontsize=12)
+        # set title
+        ax.set_title('Median OF Vectors')
+        ax.set_ylim(0, 1)
+        ax.set_xlim(0, len(vec_x_med))
+        # set x ticks size
+        ax.tick_params(axis='x')
+        # set y ticks size
+        ax.tick_params(axis='y')
+        def init_vec():
+            line_x.set_data([], [])
+            line_y.set_data([], [])
+            return line_x, line_y
+        def animate_vec(i):
+            frame = i + 1
+            line_x.set_data(np.arange(frame), vec_x_med[:frame])
+            line_y.set_data(np.arange(frame), vec_y_med[:frame])
+            frame_text.set_text(f'Frame: {frame}')
+            return line_x, line_y
+        ani_vec = animation.FuncAnimation(fig, animate_vec, frames=len(vec_x_med), init_func=init_vec, blit=True)
+        # save as gif
+        ani_vec.save('output_ani_vec.gif', writer='pillow', fps=fps)
+        # load the gif
+        ani_gif = imageio.mimread('output_ani.gif', memtest=False)
+        ani_vec_gif = imageio.mimread('output_ani_vec.gif', memtest=False)
+        # convert the gif to numpy array
+        ani_np = standardize_gif(ani_gif)
+        ani_vec_np = standardize_gif(ani_vec_gif)
+        # combine frames side by side
+        h, w = ani_np[0].shape[:2]
+        # resize the vid_np using cv2
+        video = np.array([cv2.resize(frame, (w, h)) for frame in video])
+        raw_video = np.array([cv2.resize(frame, (w, h)) for frame in raw_video])
+        # make video from grayscale to rgb
+        video = video_gray2rgb(video).astype(np.uint8)
+        raw_video = video_gray2rgb(raw_video).astype(np.uint8)
+        of_gif = np.concatenate((video, ani_np), axis=1)
+        vec_gif = np.concatenate((raw_video, ani_vec_np), axis=1)
+        # combine the gifs
+        combined_gif = np.concatenate((vec_gif, of_gif), axis=2)
+        # remove the temporary files
+        os.remove('output_ani.gif')
+        os.remove('output_ani_vec.gif')
+        # save combined gif to mp4 format
+        imageio.mimsave(save_path, combined_gif, fps=10)
     return vec_field, None
+
+def standardize_gif(gif):
+    std_frames = []
+    for frame in gif:
+        img = Image.fromarray(frame)
+        if img.mode == 'RGBA':
+            img = img.convert('RGB')
+        std_frames.append(np.array(img))
+    return np.array(std_frames)
+
+def video_gray2rgb(video):
+    return np.array([cv2.cvtColor(frame, cv2.COLOR_GRAY2RGB) for frame in video])

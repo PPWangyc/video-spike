@@ -142,7 +142,7 @@ for eid_idx, eid in enumerate(include_eids):
         val_beh.update({beh: aligned_binned_behaviors[beh][val_idxs]})
         test_beh.update({beh: aligned_binned_behaviors[beh][test_idxs]})
     
-    for trial_id in tqdm(range(max_num_trials)):
+    for trial_id in tqdm(range(max_num_trials)[:10]):
         # trial spike
         spike = aligned_binned_spikes[trial_id]
         # trial behavior
@@ -173,7 +173,10 @@ for eid_idx, eid in enumerate(include_eids):
             'roi': roi.tolist(),
             **params
         }
-        vec_field, vec_heatmap = get_optic_flow(video=whisker_video, save_path=f'{trial_id}.gif')
+        vec_field, vec_heatmap = get_optic_flow(video=whisker_video, 
+                                                save_path=f'{eid[:5]}_{trial_id}.mp4',
+                                                ses=eid[:5],
+                                                trial=trial_id,)
         continue
         out_video = cv2.VideoWriter('temp.mp4', cv2.VideoWriter_fourcc(*'mp4v'), 60, (128, 128), isColor=False)
         for frame in trial_video:
