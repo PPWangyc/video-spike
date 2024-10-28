@@ -1156,7 +1156,7 @@ def get_optic_flow(video, save_path=None, fps=60, ses='', trial=''):
         # Text Object
         frame_text = fig.text(0.02, 0.95, '', fontsize=12)
         # set title
-        ax.set_title('ME and Mean Abs OF')
+        ax.set_title(f'{ses}-t{trial} ME and Mean OF')
         ax.set_ylim(0, 1)
         ax.set_xlim(0, len(me))
         # set x ticks size
@@ -1190,7 +1190,7 @@ def get_optic_flow(video, save_path=None, fps=60, ses='', trial=''):
         # Text Object
         frame_text = fig.text(0.02, 0.95, '', fontsize=12)
         # set title
-        ax.set_title('Median OF Vectors')
+        ax.set_title(f'{ses}-t{trial} Median OF Vectors')
         ax.set_ylim(0, 1)
         ax.set_xlim(0, len(vec_x_med))
         # set x ticks size
@@ -1232,7 +1232,7 @@ def get_optic_flow(video, save_path=None, fps=60, ses='', trial=''):
         os.remove('output_ani.gif')
         os.remove('output_ani_vec.gif')
         # save combined gif to mp4 format
-        imageio.mimsave(save_path, combined_gif, fps=10)
+        imageio.mimsave(save_path, combined_gif, fps=5)
     return vec_field, None
 
 def standardize_gif(gif):
