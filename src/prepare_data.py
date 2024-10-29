@@ -30,7 +30,7 @@ ap = argparse.ArgumentParser()
 ap.add_argument("--base_path", type=str, default="/expanse/lustre/scratch/ywang74/temp_project/Downloads")
 ap.add_argument("--datasets", type=str, default="reproducible_ephys", choices=["reproducible-ephys", "brain-wide-map"])
 ap.add_argument("--huggingface_org", type=str, default="neurofm123")
-ap.add_argument("--n_sessions", type=int, default=1)
+ap.add_argument("--n_sessions", type=int, default=6)
 ap.add_argument("--n_workers", type=int, default=1)
 ap.add_argument("--eid", type=str)
 args = ap.parse_args()
@@ -80,6 +80,7 @@ beh_names = [
     #'pupil-diameter', # Some sessions do not have pupil traces
 ]
 camera = 'left'
+
 for eid_idx, eid in enumerate(include_eids):
 
     # try: 
@@ -142,12 +143,12 @@ for eid_idx, eid in enumerate(include_eids):
         val_beh.update({beh: aligned_binned_behaviors[beh][val_idxs]})
         test_beh.update({beh: aligned_binned_behaviors[beh][test_idxs]})
     
-    for trial_id in tqdm(range(max_num_trials)[:10]):
+    for trial_id in tqdm(range(max_num_trials)):
         # trial spike
         spike = aligned_binned_spikes[trial_id]
         # trial behavior
         beh = {key: aligned_binned_behaviors[key][trial_id] for key in beh_names}
-        beh['whisker-motion-energy'] = load_behavior(one, eid, 'whisker-motion-energy', video_index_list[trial_id])
+        # beh['whisker-motion-energy'] = load_behavior(one, eid, 'whisker-motion-energy', video_index_list[trial_id])
         # trial video
         trial_video = load_video(video_index_list[trial_id], url)
         # load whisker video
@@ -177,17 +178,13 @@ for eid_idx, eid in enumerate(include_eids):
                                                 save_path=f'{eid[:5]}_{trial_id}.mp4',
                                                 ses=eid[:5],
                                                 trial=trial_id,)
-        continue
+
         out_video = cv2.VideoWriter('temp.mp4', cv2.VideoWriter_fourcc(*'mp4v'), 60, (128, 128), isColor=False)
         for frame in trial_video:
             _frame = cv2.resize(frame, (128, 128))
             out_video.write(_frame)
         out_video.release()
         
-        out_whisker_of_video = cv2.VideoWriter('whisker_of_temp.mp4', cv2.VideoWriter_fourcc(*'mp4v'), 60, (vec_heatmap.shape[2], vec_heatmap.shape[1]), isColor=False)
-        for frame in vec_heatmap:
-            out_whisker_of_video.write(frame)
-        out_whisker_of_video.release()
         for key, value in beh.items():
             print(f'{key}: {value.shape}')
 
@@ -213,10 +210,5 @@ for eid_idx, eid in enumerate(include_eids):
         with tarfile.open(sink_path + '.tar', 'a') as tar:
             tar.add('temp.mp4', arcname=f'{sample_key}.video.mp4')
         os.remove('temp.mp4')
-
-        # add whisker video to the tar file
-        with tarfile.open(sink_path + '.tar', 'a') as tar:
-            tar.add('whisker_of_temp.mp4', arcname=f'{sample_key}.whisker-of.mp4')
-        os.remove('whisker_of_temp.mp4')
 
 print('Done!')

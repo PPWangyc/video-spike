@@ -966,6 +966,7 @@ def load_video_index(one, eid, camera, intervals):
         start_idx = np.searchsorted(ts, trial[0])
         frame_idxes = np.arange(start_idx, start_idx + reg_frame_num)
         if abs(len(ts_trial) - reg_frame_num) > 10:
+            print(f"bias: {abs(len(ts_trial) - reg_frame_num)}")
             raise ValueError(f'Number of frames in the video does not match the expected number of frames {reg_frame_num}. Bias > 10')
         trial_index_list.append(frame_idxes)
     session_frames = np.array(session_frames)
@@ -1233,7 +1234,7 @@ def get_optic_flow(video, save_path=None, fps=60, ses='', trial=''):
         os.remove('output_ani_vec.gif')
         # save combined gif to mp4 format
         imageio.mimsave(save_path, combined_gif, fps=5)
-    return vec_field, None
+    return vec_field, np.array(vec_heatmap)
 
 def standardize_gif(gif):
     std_frames = []
