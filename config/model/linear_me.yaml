@@ -12,5 +12,5 @@ decoder:
   type: LinearDecoder
   input_dim: 64
   hidden_dims: [128, 256]
-  output_dim: 43600 # neuron * time, 436 * 100
+  output_dim: 14400 # neuron * time, 436 * 100
   layer_num: 2
