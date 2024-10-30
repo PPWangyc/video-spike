@@ -70,7 +70,7 @@ params = {
     'single_region': False,
     'align_time': 'stimOn_times', 
     'time_window': (-.5, 1.5), 
-    # 'fr_thresh': 0.5
+    'fr_thresh': 0.5
 }
 
 beh_names = [
@@ -104,10 +104,10 @@ for eid_idx, eid in enumerate(include_eids):
     roi, mask = get_whisker_pad_roi(one, eid, camera)
     
 
-    # avg_fr = binned_spikes.sum(1).mean(0) / params['interval_len']
-    # active_neuron_ids = np.argwhere(avg_fr > 1/params['fr_thresh']).flatten()
-    # binned_spikes = binned_spikes[:,:,active_neuron_ids]
-    # print(f'# of neurons left after filtering out inactive ones: {binned_spikes.shape[-1]}/{len(avg_fr)}.')
+    avg_fr = binned_spikes.sum(1).mean(0) / params['interval_len']
+    active_neuron_ids = np.argwhere(avg_fr > 1/params['fr_thresh']).flatten()
+    binned_spikes = binned_spikes[:,:,active_neuron_ids]
+    print(f'# of neurons left after filtering out inactive ones: {binned_spikes.shape[-1]}/{len(avg_fr)}.')
   
     binned_behaviors, behavior_masks = bin_behaviors(
         one, 
@@ -175,7 +175,7 @@ for eid_idx, eid in enumerate(include_eids):
             **params
         }
         vec_field, vec_heatmap = get_optic_flow(video=whisker_video, 
-                                                save_path=f'{eid[:5]}_{trial_id}.mp4',
+                                                save_path=None,
                                                 ses=eid[:5],
                                                 trial=trial_id,)
 

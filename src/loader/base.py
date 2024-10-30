@@ -6,6 +6,7 @@ import numpy as np
 import torchvision.transforms as transforms
 from torchvision.io import write_video
 import time
+import random
 class BaseDataset():
     def __init__(
             self, 
@@ -17,7 +18,7 @@ class BaseDataset():
         self.mode = mode
         dataset = wds.WebDataset(data[mode],seed=config.seed)
         if mode == 'train':
-            dataset = dataset.shuffle(10000)
+            dataset = dataset.shuffle(10000, rng=random.Random(config.seed))
         self.dataset = dataset.decode(wds.autodecode.torch_video, "torchrgb").map(self.preprocess_sample)
         self.video_transform = transforms.Compose([
             transforms.Resize((config.data.modalities.video.height, config.data.modalities.video.width))
