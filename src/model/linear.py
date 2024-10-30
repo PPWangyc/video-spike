@@ -10,7 +10,7 @@ class Linear(torch.nn.Module):
         x = x.flatten(1)
         x = self.encoder(x)
         x = self.decoder(x)
-        x = x.reshape(-1, 100, 436)
+        x = x.reshape(-1, 100, 144)
         return x
 
 class Encoder(torch.nn.Module):
