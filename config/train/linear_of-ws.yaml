@@ -59,7 +59,7 @@ data:
     wheel-speed: 
       transform: null
       transform_kwargs: {}
-      input: False
+      input: True
     whisker-motion-energy: 
       transform: null
       transform_kwargs: {}
@@ -139,7 +139,7 @@ method:
 
 optimizer:
   gradient_accumulation_steps: 1
-  lr: 3.e-5
+  lr: 4.e-5
   wd: 0.01
   eps: 1.e-8
   warmup_pct: 0.15 # cosine/linear
