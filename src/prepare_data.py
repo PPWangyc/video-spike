@@ -150,7 +150,7 @@ for eid_idx, eid in enumerate(include_eids):
         beh = {key: aligned_binned_behaviors[key][trial_id] for key in beh_names}
         # beh['whisker-motion-energy'] = load_behavior(one, eid, 'whisker-motion-energy', video_index_list[trial_id])
         # trial video
-        trial_video = load_video(video_index_list[trial_id], url)
+        _trial_video = load_video(video_index_list[trial_id], url)
         # load whisker video
         whisker_video = load_whisker_video(video_index_list[trial_id], url, mask)
         # check shape
@@ -174,23 +174,34 @@ for eid_idx, eid in enumerate(include_eids):
             'roi': roi.tolist(),
             **params
         }
-        vec_field, vec_heatmap = get_optic_flow(video=whisker_video, 
+        whisker_of = get_optic_flow(video=whisker_video, 
                                                 save_path=None,
                                                 ses=eid[:5],
                                                 trial=trial_id,)
-
-        out_video = cv2.VideoWriter('temp.mp4', cv2.VideoWriter_fourcc(*'mp4v'), 60, (128, 128), isColor=False)
-        for frame in trial_video:
-            _frame = cv2.resize(frame, (128, 128))
-            out_video.write(_frame)
-        out_video.release()
         
-        for key, value in beh.items():
-            print(f'{key}: {value.shape}')
+        # add prefix to keys
+        whisker_of = {f'whisker-{key}': value for key, value in whisker_of.items()}
+        out_video = cv2.VideoWriter('temp.mp4', cv2.VideoWriter_fourcc(*'mp4v'), 60, (128, 128), isColor=False)
+        trial_video = []
+        for i in range(_trial_video.shape[0]):
+            frame = cv2.resize(_trial_video[i], (128, 128))
+            out_video.write(frame)
+            trial_video.append(frame)
+        out_video.release()
+        trial_video = np.array(trial_video)
+        
+        whole_of = get_optic_flow(
+            video=trial_video, 
+            save_path=None,
+            ses=eid[:5],
+            trial=trial_id
+        )
+        whole_of = {f'whole-{key}': value for key, value in whole_of.items()}
 
         trial_data = {
             'ap': spike,
-            'of': vec_field,
+            **whisker_of,
+            **whole_of,
             **beh
         }
         # each key in trial_data add .pyd

@@ -48,30 +48,10 @@ data:
       width: 128
       height: 128
       input: False
-    choice: 
-      transform: null
-      transform_kwargs: {}
-      input: False
-    block: 
-      transform: null
-      transform_kwargs: {}
-      input: False
-    wheel-speed: 
-      transform: null
-      transform_kwargs: {}
-      input: False
-    whisker-motion-energy: 
-      transform: null
-      transform_kwargs: {}
-      input: False
-    whisker-of: 
+    whole-of-2d: 
       transform: null
       transform_kwargs: {}
       input: True
-    of: 
-      transform: null
-      transform_kwargs: {}
-      input: False
 
   # dataset_name: lorenz # Any registered dataset name.
   dataset_name: ibl # Any registered dataset name.
@@ -139,7 +119,7 @@ method:
 
 optimizer:
   gradient_accumulation_steps: 1
-  lr: 4.e-5
+  lr: 5.e-5
   wd: 0.01
   eps: 1.e-8
   warmup_pct: 0.15 # cosine/linear

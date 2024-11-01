@@ -59,11 +59,17 @@ class BaseDataset():
                 # write_video('video.mp4', _video, fps=60)
                 return video
         elif mod == 'whisker-of':
-            video, _, meta = value
-            # grayscale video only take the first channel
-            video = video[:,:,:,0].unsqueeze(1)
-            return video
-        elif mod == 'of':
+            a = torch.from_numpy(value)
+            return torch.from_numpy(value)
+        elif mod == 'whisker-of-2d':
+            return torch.from_numpy(value)
+        elif mod == 'whisker-of-video':
+            return torch.from_numpy(value)
+        elif mod == 'whole-of':
+            return torch.from_numpy(value)
+        elif mod == 'whole-of-2d':
+            return torch.from_numpy(value)
+        elif mod == 'whole-of-video':
             return torch.from_numpy(value)
         elif mod == 'wheel-speed':
             return torch.from_numpy(value)

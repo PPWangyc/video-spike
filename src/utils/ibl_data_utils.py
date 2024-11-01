@@ -1124,6 +1124,7 @@ def get_optic_flow(video, save_path=None, fps=60, ses='', trial=''):
         # vec_video.append(new_frame)
         vec_heatmap.append(np.abs(flow).sum(2))
         vec_field.append(flow)
+    raw_vec_field = np.array(vec_field).copy()
     vec_field = np.abs(vec_field)
     vec_field = np.array(vec_field) # frame, height, width, 2
     vec_x_med = np.median(vec_field[..., 0], axis=(1,2))
@@ -1234,7 +1235,12 @@ def get_optic_flow(video, save_path=None, fps=60, ses='', trial=''):
         os.remove('output_ani_vec.gif')
         # save combined gif to mp4 format
         imageio.mimsave(save_path, combined_gif, fps=5)
-    return vec_field, np.array(vec_heatmap)
+    
+    return {
+        'of': clip_vec_field, # use the clip version of the optical flow, as it is more stable
+        'of-2d': np.array([vec_x_med, vec_y_med]).T, # 2D optical flow vectors
+        'of-video': raw_vec_field # raw optical flow vectors
+    }
 
 def standardize_gif(gif):
     std_frames = []

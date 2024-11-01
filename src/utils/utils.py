@@ -19,6 +19,7 @@ def get_args():
     parser.add_argument('--model_config', type=str, default='configs/model/model_config.yaml', help='Model config file')
     parser.add_argument('--train_config', type=str, default='configs/train/train_config.yaml', help='Train config file')
     parser.add_argument('--seed', type=int, default=42, help='Random seed')
+    parser.add_argument('--eid', type=str, default='d57df551-6dcb-4242-9c72-b806cff5613a')
 
     args = parser.parse_args()
     return args

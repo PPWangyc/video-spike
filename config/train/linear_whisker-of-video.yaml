@@ -48,27 +48,7 @@ data:
       width: 128
       height: 128
       input: False
-    choice: 
-      transform: null
-      transform_kwargs: {}
-      input: False
-    block: 
-      transform: null
-      transform_kwargs: {}
-      input: False
-    wheel-speed: 
-      transform: null
-      transform_kwargs: {}
-      input: False
-    whisker-motion-energy: 
-      transform: null
-      transform_kwargs: {}
-      input: False
-    whisker-of: 
-      transform: null
-      transform_kwargs: {}
-      input: False
-    of: 
+    whisker-of-video: 
       transform: null
       transform_kwargs: {}
       input: True
