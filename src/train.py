@@ -4,7 +4,8 @@ from utils.utils import (
     NAME2MODEL
 )
 from utils.dataset_utils import (
-    split_dataset
+    split_dataset,
+    get_metadata_from_loader
 )
 from utils.config_utils import (
     config_from_kwargs,
@@ -32,8 +33,12 @@ def main():
     # set dataset
     dataset_split_dict = split_dataset(config.dirs.data_dir,eid=args.eid)
     train_dataloader, val_dataloader, test_dataloader = make_loader(config, dataset_split_dict)
+    meta_data = get_metadata_from_loader(train_dataloader, config)
+    print(f"meta_data: {meta_data}")
     # set model
     model_class = NAME2MODEL[config.model.model_class]
+    config['model']['encoder']['input_dim'] = meta_data['input_dim']
+    config['model']['decoder']['output_dim'] = meta_data['output_dim']
     model = model_class(config.model)
     # set optimizer
     optimizer = torch.optim.AdamW(

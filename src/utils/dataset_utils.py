@@ -1,5 +1,6 @@
 import os
 import random
+import torch
 
 def split_dataset(data_dir, eid, train_ratio=0.8, val_ratio=0.1, test_ratio=0.1):
     """
@@ -46,3 +47,25 @@ def get_eids_from_filenames(filenames):
     # unique eids
     eids = list(set(eids))
     return eids
+
+def get_metadata_from_loader(data_loader, config):
+    """
+    Get the metadata from the data loader.
+    """
+    batch = next(iter(data_loader))
+    input_mods = []
+    for mod in config.data.modalities.keys():
+        if config.data.modalities[mod]['input']:
+            input_mods.append(mod)
+    
+    _input = []
+    for mod in input_mods:
+        _input.append(batch[mod].flatten(1))
+    _input = torch.cat(_input, dim=-1)
+
+    return{
+        'num_neurons': batch['ap'].shape[2],
+        'input_dim': _input.shape[1],
+        'input_mods': input_mods,
+        'output_dim': batch['ap'].shape[1] * batch['ap'].shape[2]
+    }
