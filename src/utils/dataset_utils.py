@@ -1,13 +1,17 @@
 import os
 import random
 
-def split_dataset(data_dir, train_ratio=0.8, val_ratio=0.1, test_ratio=0.1):
+def split_dataset(data_dir, eid, train_ratio=0.8, val_ratio=0.1, test_ratio=0.1):
     """
     Split the dataset into train, validation, and test sets.
     """
     # Get the list of filenames
     filenames = os.listdir(data_dir)
     filenames = [os.path.join(data_dir, f) for f in filenames if f.endswith('.tar')]
+
+    # Filter the filenames by experiment ID
+    filenames = [f for f in filenames if eid in f]
+    print(f"Found {len(filenames)} files for EID: {eid}")
 
     # Shuffle the filenames
     random.shuffle(filenames)

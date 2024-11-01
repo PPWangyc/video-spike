@@ -48,7 +48,7 @@ data:
       width: 128
       height: 128
       input: False
-    whole-of-2d: 
+    whisker-of-2d: 
       transform: null
       transform_kwargs: {}
       input: True

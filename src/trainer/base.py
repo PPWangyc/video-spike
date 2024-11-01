@@ -34,6 +34,7 @@ class BaseTrainer():
         self.lr_scheduler = kwargs.get("lr_scheduler", None)
         self.config = kwargs.get("config", None)
         self.dataset_split_dict = kwargs.get("dataset_split_dict", None)
+        self.eid = kwargs.get("eid", None)
 
         self.model_class = self.config.model.model_class
         self.metrics = ['bps','rsquared']       
@@ -44,11 +45,13 @@ class BaseTrainer():
 
     def _create_log_dir(self):
         _input_mods = "_".join(self.input_mods)
-        self.log_dir = os.path.join(self.log_dir, 
-                                    _input_mods)
+        self.log_dir = os.path.join(
+            self.log_dir, 
+            self.eid[:5],
+            _input_mods)
         os.makedirs(self.log_dir, exist_ok=True)
         wandb.init(project=self.config.wandb.project, 
-                   name="{}".format(_input_mods),
+                   name="{}_{}".format(self.eid[:5],_input_mods),
                    config=self.config) if self.config.wandb.use else None
 
     

@@ -30,7 +30,7 @@ def main():
     # set seed
     set_seed(config.seed)
     # set dataset
-    dataset_split_dict = split_dataset(config.dirs.data_dir)
+    dataset_split_dict = split_dataset(config.dirs.data_dir,eid=args.eid)
     train_dataloader, val_dataloader, test_dataloader = make_loader(config, dataset_split_dict)
     # set model
     model_class = NAME2MODEL[config.model.model_class]
@@ -64,7 +64,8 @@ def main():
         "lr_scheduler": lr_scheduler,
         "config": config,
         "criterion": criterion,
-        "dataset_split_dict": dataset_split_dict
+        "dataset_split_dict": dataset_split_dict,
+        "eid": args.eid,
     }
     trainer = make_base_trainer(
         model=model,
