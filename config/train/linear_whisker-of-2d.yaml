@@ -9,8 +9,8 @@ wandb:
 # Logging directories
 dirs:
   checkpoint_dir: checkpoints  # save model state dicts (todo optimizer states)
-  log_dir: results  # save tensorboard logs
-  data_dir: data/ibl-video
+  log_dir: /expanse/lustre/scratch/ywang74/temp_project/video-spike/results  # save tensorboard logs
+  data_dir: /expanse/lustre/scratch/ywang74/temp_project/Downloads/ibl-video
   
 
 

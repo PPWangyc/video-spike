@@ -5,12 +5,13 @@ class Linear(torch.nn.Module):
         super(Linear, self).__init__()
         self.encoder = Encoder(config.encoder)
         self.decoder = Decoder(config.decoder)
+        self.output_dim = config.decoder.output_dim // 100
 
     def forward(self, x):
         x = x.flatten(1)
         x = self.encoder(x)
         x = self.decoder(x)
-        x = x.reshape(-1, 100, 144)
+        x = x.reshape(-1, 100, self.output_dim)
         return x
 
 class Encoder(torch.nn.Module):

@@ -21,7 +21,7 @@ conda activate vs
 
 cd ..
 
-python src/prepare_data.py --base_path data
+python src/prepare_data.py --base_path /expanse/lustre/scratch/ywang74/temp_project/Downloads
 
 # # module load
 # ml git-lfs/2.11.0
