@@ -129,6 +129,7 @@ class BaseTrainer():
                 "best_eval_loss": best_eval_loss,
                 "best_eval_bps": best_eval_bps
             }
+           np.save(os.path.join(self.log_dir, "test_results.npy"), test_model_results)
            wandb.log(log) if self.config.wandb.use else print(log)
         
     def computer_loss(self, outputs, batch):
