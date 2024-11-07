@@ -45,13 +45,16 @@ class BaseTrainer():
 
     def _create_log_dir(self):
         _input_mods = "_".join(self.input_mods)
+        model_name = self.model.__class__.__name__
         self.log_dir = os.path.join(
             self.log_dir, 
             self.eid[:5],
-            _input_mods)
+            _input_mods,
+            model_name,
+        )
         os.makedirs(self.log_dir, exist_ok=True)
         wandb.init(project=self.config.wandb.project, 
-                   name="{}_{}".format(self.eid[:5],_input_mods),
+                   name="{}_{}_{}".format(self.eid[:5],_input_mods,model_name),
                    config=self.config) if self.config.wandb.use else None
 
     
