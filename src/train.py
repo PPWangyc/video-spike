@@ -83,9 +83,24 @@ def main():
     # import time
     # now = time.time()
     # count = 0
-    # for batch in train_dataloader:
+    # from transformers import AutoImageProcessor
+    # image_processor = AutoImageProcessor.from_pretrained("MCG-NJU/videomae-base")
+    # print(image_processor)
+    # for batch in test_dataloader:
     #     print(f"batch: {count}, time: {time.time() - now}s, size: {batch['ap'].shape[0]}")
     #     now = time.time()
+    #     inputs = batch['video'].cuda()
+    #     inputs = inputs.squeeze(2).unsqueeze(-1)
+    #     # repeat the input to 3 channels
+    #     inputs = inputs.repeat(1, 1, 1, 1, 3)
+    #     inputs = image_processor(list(inputs[0]), return_tensors="pt")
+    #     inputs['pixel_values'] = inputs['pixel_values'].cuda()[:,:16,...]
+    #     print(inputs['pixel_values'].shape)
+    #     exit()
+    #     outputs = model(inputs)
+    #     hidden = outputs.last_hidden_state
+    #     print(hidden.shape)
+    #     exit()
     # exit()
     trainer.train()
 if __name__ == '__main__':

@@ -58,9 +58,12 @@ class BaseTrainer():
     def _forward_model_outputs(self, batch):
         batch = move_batch_to_device(batch, self.accelerator.device)
         _inputs = []
-        for mod in self.input_mods:
-            _inputs.append(batch[mod].flatten(1))
-        inputs = torch.cat(_inputs, dim=-1)
+        if self.config.model.model_class == "Linear":
+            for mod in self.input_mods:
+                _inputs.append(batch[mod].flatten(1))
+            inputs = torch.cat(_inputs, dim=-1)
+        else:
+            inputs = batch['video']
         return self.model(inputs)
 
     def _plot_figs(self, eval_epoch_results, epoch=0, test=False):

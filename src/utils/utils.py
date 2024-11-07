@@ -4,14 +4,17 @@ import torch
 import numpy as np
 import random
 from model.linear import Linear
+from model.videomae import VideoMAE
 import matplotlib.pyplot as plt
 from utils.metric_utils import r2_score, bits_per_spike
 from sklearn.metrics import r2_score as r2_score_sklearn
 from sklearn.metrics import accuracy_score
-
+import glob
+import pandas as pd
 
 NAME2MODEL = {
     "Linear": Linear,
+    "VideoMAE": VideoMAE
 }
 
 def get_args():
@@ -19,6 +22,7 @@ def get_args():
     parser.add_argument('--model_config', type=str, default='configs/model/model_config.yaml', help='Model config file')
     parser.add_argument('--train_config', type=str, default='configs/train/train_config.yaml', help='Train config file')
     parser.add_argument('--seed', type=int, default=42, help='Random seed')
+    parser.add_argument('--log_dir', type=str, default='logs', help='Log directory')
     parser.add_argument('--eid', type=str, default='d57df551-6dcb-4242-9c72-b806cff5613a')
 
     args = parser.parse_args()
@@ -142,3 +146,44 @@ def metrics_list(gt, pred, metrics=["bps", "r2", "rsquared", "mse", "mae", "acc"
         results["acc"] = acc
 
     return results
+
+def get_log(log_dir):
+    # recursively get all log files in the log directory
+    log_files = []
+    for root, dirs, files in os.walk(log_dir):
+        for file in files:
+            if file.endswith(".npy"):
+                log_files.append(os.path.join(root, file))
+    df_log = {}
+    for log_file in log_files:
+        data = np.load(log_file, allow_pickle=True).item()
+        eid = log_file.split("results")[1].split("/")[1]
+        df_log[log_file] = data['test_res']
+        df_log[log_file]["eid"] = eid
+        mod = log_file.split("results")[1].split("/")[2]
+        df_log[log_file]["mod"] = mod
+    df_log = pd.DataFrame(df_log)
+    df_log = df_log.T
+    return df_log
+
+def draw_results(df_log, metrics=["bps", "r2", "rsquared", "mse", "mae", "acc"]):
+    # draw results
+    # only take columns test_bps, eid, mod
+    df_log = df_log[["test_" + metric for metric in metrics] + ["eid", "mod"]]
+    # remove eid c7bf2
+    df_log = df_log[df_log["eid"] != "c7bf2"]
+    # group by mod
+    df_grouped = df_log.groupby("mod")
+    fig, ax = plt.subplots(1, 1, figsize=(12, 5))
+    for mod, group in df_grouped:
+        # create a box plot for each modality bps
+        bps = group["test_bps"].values
+        # make a box plot of the bps of each modality, make the color of the median black
+        ax.boxplot(bps, positions=[list(df_grouped.groups.keys()).index(mod)], widths=0.2, medianprops=dict(color="black"))
+        # make the bar plot of the mean of the bps of each modality
+        ax.bar(list(df_grouped.groups.keys()).index(mod), np.nanmean(bps), width=0.3)
+    # label x axis
+    ax.set_xticklabels(df_grouped.groups.keys())
+    # label y axis
+    ax.set_ylabel("bps")
+    return fig
