@@ -1,6 +1,8 @@
+import numpy as np
 import torch
 import torch.nn as nn
-import numpy as np
+from torch import optim
+
 
 def np2tensor(v):
     return torch.from_numpy(v)
@@ -22,6 +24,7 @@ def get_device():
         device = torch.device("cpu")
         print("GPU not available, CPU used")
     return device
+
 
 class RRRGD():
     def __init__(self, train_data, ncomp, l2=0.):
@@ -149,3 +152,50 @@ class RRRGD():
 
     def regression_loss(self):
         return {eid: self.l2*torch.sum(self.compute_beta(eid, withbias=False)**2) for eid in self.eids}
+
+"""
+train the 
+    model: RRRGD_model
+given the
+    train_data: {eid: Xy_regression[area][eid]}
+- model saved in model_fname
+"""
+def train_model(model, train_data, optimizer, model_fname, save=True):
+    def closure():
+        optimizer.zero_grad()
+        model.train()
+        total_loss = 0.0;
+        train_mses_all = model.compute_MSE_RRRGD(train_data, 0)
+        reg_losses_all = model.regression_loss()
+        for eid in train_mses_all:
+            total_loss += train_mses_all[eid].sum()
+            total_loss += reg_losses_all[eid]
+        total_loss.backward()
+        return total_loss
+
+    optimizer.step(closure)
+
+    model.eval()
+    mses_val = model.compute_MSE_RRRGD(train_data, 1)
+    best_loss = torch.sum(torch.cat([mses_val[k] for k in mses_val]))
+
+    if save:
+        print('saving model')
+        # Save the best model parameters
+        checkpoint = {"RRRGD_model": model.state_dict(),
+                      "optimizer": optimizer.state_dict()}
+        torch.save(checkpoint, model_fname)
+        
+    return model, {"mses_val":mses_val, "mse_val_mean":best_loss}
+
+def train_model_main(train_data, l2, n_comp, model_fname, save=True):
+    area_model = RRRGD(train_data, n_comp, l2=l2)
+    
+    device = get_device()
+    area_model.to(device)
+    print(f"training on device: {device}")
+    
+    optimizer = optim.LBFGS(area_model.model.parameters(),)
+    _, mse_val = train_model(area_model, train_data, optimizer,
+                             model_fname=model_fname, save=save)
+    return area_model, mse_val

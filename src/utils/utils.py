@@ -24,7 +24,7 @@ def get_args():
     parser.add_argument('--seed', type=int, default=42, help='Random seed')
     parser.add_argument('--log_dir', type=str, default='logs', help='Log directory')
     parser.add_argument('--eid', type=str, default='d57df551-6dcb-4242-9c72-b806cff5613a')
-
+    parser.add_argument('--input_mod', type=str, default='whisker-motion-energy', help='Input modality')
     args = parser.parse_args()
     return args
 
@@ -84,6 +84,13 @@ def plot_neurons_r2(gt, pred, epoch=0, neuron_idx=[],modality="behavior"):
                                                             modality, 
                                                             np.mean(r2_values)))
     return fig
+
+def _std(arr):
+    mean = np.mean(arr, axis=0) # (T, N)
+    std = np.std(arr, axis=0) # (T, N)
+    std = np.clip(std, 1e-8, None) # (T, N) 
+    arr = (arr - mean) / std
+    return arr, mean, std
 
 # metrics list, return different metrics results
 def metrics_list(gt, pred, metrics=["bps", "r2", "rsquared", "mse", "mae", "acc"], device="cpu"):
