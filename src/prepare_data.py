@@ -174,11 +174,13 @@ for eid_idx, eid in enumerate(include_eids):
             'roi': roi.tolist(),
             **params
         }
-        whisker_of = get_optic_flow(video=whisker_video, 
-                                                save_path=None,
-                                                ses=eid[:5],
-                                                trial=trial_id,)
-        
+        whisker_of = get_optic_flow(
+            video=whisker_video, 
+            save_path=None,
+            ses=eid[:5],
+            trial=trial_id,
+        )
+
         # add prefix to keys
         whisker_of = {f'whisker-{key}': value for key, value in whisker_of.items()}
         out_video = cv2.VideoWriter('temp.mp4', cv2.VideoWriter_fourcc(*'mp4v'), 60, (128, 128), isColor=False)
@@ -189,6 +191,11 @@ for eid_idx, eid in enumerate(include_eids):
             trial_video.append(frame)
         out_video.release()
         trial_video = np.array(trial_video)
+
+        out_whisker_video = cv2.VideoWriter('whisker_temp.mp4', cv2.VideoWriter_fourcc(*'mp4v'), 60, (whisker_video.shape[2], whisker_video.shape[1]), isColor=False)
+        for i in range(whisker_video.shape[0]):
+            out_whisker_video.write(whisker_video[i])
+        out_whisker_video.release()
         
         whole_of = get_optic_flow(
             video=trial_video, 
@@ -220,6 +227,8 @@ for eid_idx, eid in enumerate(include_eids):
         # add video to the tar file
         with tarfile.open(sink_path + '.tar', 'a') as tar:
             tar.add('temp.mp4', arcname=f'{sample_key}.video.mp4')
+            tar.add('whisker_temp.mp4', arcname=f'{sample_key}.whisker-video.mp4')
         os.remove('temp.mp4')
+        os.remove('whisker_temp.mp4')
 
 print('Done!')

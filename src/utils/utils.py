@@ -171,7 +171,7 @@ def draw_results(df_log, metrics=["bps", "r2", "rsquared", "mse", "mae", "acc"])
     # only take columns test_bps, eid, mod
     df_log = df_log[["test_" + metric for metric in metrics] + ["eid", "mod"]]
     # remove eid c7bf2
-    df_log = df_log[df_log["eid"] != "c7bf2"]
+    df_log = df_log[df_log["eid"] != "03d9a"]
     # group by mod
     df_grouped = df_log.groupby("mod")
     fig, ax = plt.subplots(1, 1, figsize=(12, 5))
@@ -182,6 +182,8 @@ def draw_results(df_log, metrics=["bps", "r2", "rsquared", "mse", "mae", "acc"])
         ax.boxplot(bps, positions=[list(df_grouped.groups.keys()).index(mod)], widths=0.2, medianprops=dict(color="black"))
         # make the bar plot of the mean of the bps of each modality
         ax.bar(list(df_grouped.groups.keys()).index(mod), np.nanmean(bps), width=0.3)
+        # plot mean value on the top of the bar
+        ax.text(list(df_grouped.groups.keys()).index(mod), np.nanmean(bps), "{:.2f}".format(np.nanmean(bps)), ha="center", va="bottom")
     # label x axis
     ax.set_xticklabels(df_grouped.groups.keys())
     # label y axis
