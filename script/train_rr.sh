@@ -20,7 +20,7 @@ cd ..
 conda activate vs
 input_mod=$1
 eid=$2
-python src/train_rrr.py --model_config config/model/linear_$input_mod.yaml \
+python src/train_rrr.py --model_config config/model/linear_me.yaml \
                     --train_config config/train/rrr.yaml \
                     --eid $eid \
                     --input_mod $input_mod

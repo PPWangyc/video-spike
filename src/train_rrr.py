@@ -44,7 +44,7 @@ def main():
     config = update_config(args, config)
 
     # select 100 idx from 120
-    idx = np.random.choice(120, 100, replace=False)
+    idx = np.random.choice(119, 100, replace=False)
     sorted_idx = np.sort(idx)
 
     # set seed
@@ -72,21 +72,52 @@ def main():
         input_mod = 'whisker-of'
     elif args.input_mod == 'of-2d':
         input_mod = 'whisker-of-2d'
+    elif args.input_mod == 'of-2d-v':
+        input_mod = 'whisker-of-video'
     
     for batch in train_dataloader:
-        train_X.append(batch[input_mod].numpy())
+        if input_mod == 'whisker-of-video':
+            x_vec = torch.tensor(np.median(batch[input_mod][...,0].numpy(),axis=(2,3)))
+            y_vec = torch.tensor(np.median(batch[input_mod][...,1].numpy(),axis=(2,3)))
+            # x_vec = batch[input_mod][...,0].mean(axis=(2,3))
+            # y_vec = batch[input_mod][...,1].mean(axis=(2,3))
+            value = torch.stack([x_vec, y_vec], dim=2)
+            # took median of x and y
+            
+            # print(value.shape)
+            # exit()
+            train_X.append(value.numpy())
+        else:
+            train_X.append(batch[input_mod].numpy())
         train_y.append(batch["ap"].numpy())
     train_X = np.concatenate(train_X, axis=0)
     train_y = np.concatenate(train_y, axis=0)
     train_y = gaussian_filter1d(train_y, smooth_w, axis=1)
+    # if args.input_mod == 'of-2d-v':
+    #     # normalize x and y
+    #     train_X[...,0] = (train_X[...,0] - np.min(train_X[...,0])) / (np.max(train_X[...,0]) - np.min(train_X[...,0]))
+    #     train_X[...,1] = (train_X[...,1] - np.min(train_X[...,1])) / (np.max(train_X[...,1]) - np.min(train_X[...,1]))
 
     val_X = []; val_y = []
     for batch in test_dataloader:
-        val_X.append(batch[input_mod].numpy())
+        if input_mod == 'whisker-of-video':
+            x_vec = torch.tensor(np.median(batch[input_mod][...,0].numpy(),axis=(2,3)))
+            y_vec = torch.tensor(np.median(batch[input_mod][...,1].numpy(),axis=(2,3)))
+            # x_vec = batch[input_mod][...,0].mean(axis=(2,3))
+            # y_vec = batch[input_mod][...,1].mean(axis=(2,3))
+            value = torch.stack([x_vec, y_vec], dim=2)
+            # value = batch[input_mod].mean(axis=(2,3,4))
+            val_X.append(value.numpy())
+        else:
+            val_X.append(batch[input_mod].numpy())
         val_y.append(batch["ap"].numpy())
     val_X = np.concatenate(val_X, axis=0)
     val_y = np.concatenate(val_y, axis=0)
     val_y = gaussian_filter1d(val_y, smooth_w, axis=1)
+    # if args.input_mod == 'of-2d-v':
+    #     # normalize x and y
+    #     val_X[...,0] = (val_X[...,0] - np.min(val_X[...,0])) / (np.max(val_X[...,0]) - np.min(val_X[...,0]))
+    #     val_X[...,1] = (val_X[...,1] - np.min(val_X[...,1])) / (np.max(val_X[...,1]) - np.min(val_X[...,1]))
 
     train_data[eid]["X"].append(train_X)
     train_data[eid]["y"].append(train_y)
