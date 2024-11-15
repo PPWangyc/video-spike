@@ -25,7 +25,12 @@ for idx, eid in enumerate(eids):
 
     # Determine the number of plots (2 for scatter + 10 neurons)
     fig, axs = plt.subplots(12, 1, figsize=(15, 40))  # 10 neurons + 2 scatter plots, all in one column
-    
+    # disable axs ticks
+    for ax in axs:
+        ax.set_xticks([])
+        ax.set_yticks([])
+        ax.spines['top'].set_visible(False)
+        ax.spines['bottom'].set_visible(False)
     min_bps = min(np.min(me_result['co_bps']), np.min(of_result['co_bps']))
     max_bps = max(np.max(me_result['co_bps']), np.max(of_result['co_bps']))
     min_r2 = min(np.min(me_result['r2']), np.min(of_result['r2']))
@@ -70,6 +75,10 @@ for idx, eid in enumerate(eids):
         axs_gt.set_title(f'Neuron {neuron_idx} GT')
         axs_me.set_title('ME')
         axs_of.set_title(f'{input_mod}')
+
+        # figure out
+        
+
 
     # Adjust spacing and save
     fig.tight_layout()
