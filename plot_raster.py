@@ -59,7 +59,7 @@ for idx, eid in enumerate(eids):
     ax_r2.plot([min_r2, max_r2], [min_r2, max_r2], 'k--', lw=2, color='red')
     ax_r2.set_xlabel('ME R2')
     ax_r2.set_ylabel(f'{input_mod} R2')
-    ax_r2.set_title(f'EID: {eid[:5]} \n R2 Scatter, ME: {me_r2:.2f}, {input_mod}: {of_r2:.2f}')
+    ax_r2.set_title(f'EID: {eid[:5]} \n R2 Scatter, ME R2: {me_r2:.3f}, {input_mod} R2: {of_r2:.3f}')
 
     # BPS Scatter Plot, use entire row
     ax_bps = plt.subplot2grid((12, 3), (1, 0), colspan=3, fig=fig)
@@ -69,7 +69,7 @@ for idx, eid in enumerate(eids):
     ax_bps.plot([min_bps, max_bps], [min_bps, max_bps], 'k--', lw=2, color='red')
     ax_bps.set_xlabel('ME BPS')
     ax_bps.set_ylabel(f'{input_mod} BPS')
-    ax_bps.set_title(f'Scatter BPS, ME: {me_bps:.3f}, {input_mod}: {of_bps:.3f}')
+    ax_bps.set_title(f'BPS Scatter, ME BPS: {me_bps:.3f}, {input_mod} BPS: {of_bps:.3f}')
 
     # Top 10 active neurons plots
     top_neuron_idx = np.argsort(np.mean(of_result['gt'], axis=(0, 1)))[::-1][:10]
