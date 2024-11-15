@@ -27,6 +27,11 @@ for idx, eid in enumerate(eids):
     me_neuron_r2 = np.array(me_result['r2'])
     of_neuron_r2 = np.array(of_result['r2'])
 
+    me_neuron_bps = np.array(me_result['co_bps'])
+    of_neuron_bps = np.array(of_result['co_bps'])
+    min_bps = np.min([np.min(me_neuron_bps), np.min(of_neuron_bps)])
+    max_bps = np.max([np.max(me_neuron_bps), np.max(of_neuron_bps)])
+
     of_gt = np.array(of_result['gt'])
     of_pred = np.array(of_result['pred'])
 
@@ -43,9 +48,14 @@ for idx, eid in enumerate(eids):
     _mean_trial_me = np.mean(me_pred, axis=0).T
     _mean_trial_of = np.mean(of_pred, axis=0).T
     _gt = np.mean(of_gt, axis=0).T
-    print(_mean_trial_me.shape, _mean_trial_of.shape, _gt.shape)
+
     me_neuron_r2 = np.array([r2_score(_gt[i],_mean_trial_me[i]) for i in range(_gt.shape[0])])
     of_neuron_r2 = np.array([r2_score(_gt[i],_mean_trial_of[i]) for i in range(_gt.shape[0])])
+
+    # select top 10 neurons according to firing rate
+    top_neuron_idx = np.argsort(np.mean(of_gt, axis=(0,1)))[::-1][:10]
+    # top 10 r2 neurons
+    # top_neuron_idx = np.argsort(of_neuron_r2)[::-1][:10]
 
     me_r2 = np.nanmean(me_neuron_r2)
     of_r2 = np.nanmean(of_neuron_r2)
@@ -61,10 +71,6 @@ for idx, eid in enumerate(eids):
     axs_r2[idx].legend([f'Session {eid[:5]} Neurons'])
     axs_r2[idx].set_title(f'ME ({me_r2:.3f}) vs {input_mod} ({of_r2:.3f})')
 
-    me_neuron_bps = np.array(me_result['co_bps'])
-    of_neuron_bps = np.array(of_result['co_bps'])
-    min_bps = np.min([np.min(me_neuron_bps), np.min(of_neuron_bps)])
-    max_bps = np.max([np.max(me_neuron_bps), np.max(of_neuron_bps)])
     # Plot BPS scatter
     axs_bps[idx].scatter(me_neuron_bps, of_neuron_bps)
     axs_bps[idx].set_xlabel('ME BPS')
@@ -72,6 +78,28 @@ for idx, eid in enumerate(eids):
     axs_bps[idx].plot([min_bps, max_bps], [min_bps, max_bps], color='red')  # Line for diagonal
     axs_bps[idx].legend([f'Session {eid[:5]} Neurons'])
     axs_bps[idx].set_title(f'ME ({me_population_bps:.3f} BPS) vs {input_mod} ({op_population_bps:.3f} BPS)')
+    
+    for neuron_idx in top_neuron_idx[:10]:
+        gt_neuron = me_gt[...,neuron_idx]
+        me_neuron = me_pred[...,neuron_idx]
+        of_neuron = of_pred[...,neuron_idx]
+
+        fig, axs = plt.subplots(1, 3, figsize=(10, 5))
+        axs[0].imshow(gt_neuron, aspect='auto',cmap='binary')
+        axs[0].set_title(f'GT Neuron idx: {neuron_idx}')
+        axs[1].imshow(me_neuron, aspect='auto',cmap='binary')
+        axs[1].set_title(f'ME, R2: {me_neuron_r2[neuron_idx]:.3f}, CO-BPS: {me_neuron_bps[neuron_idx]:.3f}')
+        axs[2].imshow(of_neuron, aspect='auto',cmap='binary')
+        axs[2].set_title(f'{input_mod}, R2: {of_neuron_r2[neuron_idx]:.3f}, CO-BPS: {of_neuron_bps[neuron_idx]:.3f}')
+        # x label and y label
+        axs[0].set_xlabel('Time', fontsize=12)
+        axs[0].set_ylabel(f'Neuron: {neuron_idx} \n Trial idx', fontsize=12)
+        axs[1].set_xlabel('Time', fontsize=12)
+        axs[2].set_xlabel('Time', fontsize=12)
+        fig.tight_layout()
+        fig.savefig(f'neuron_{neuron_idx}_{eid[:5]}_me.png')
+    exit()
+    
 
 # Save figures
 fig_r2.tight_layout()
