@@ -4,107 +4,53 @@ from utils.metric_utils import bits_per_spike
 from sklearn.metrics import r2_score 
 import argparse
 
+# Argument parsing setup
 parser = argparse.ArgumentParser(description='Plot scatter plots for ME and OF')
 parser.add_argument('--input_mod', type=str, default='of-2d', help='Input modality')
 args = parser.parse_args()
+
+# Reading experiment IDs from file
 eids = []
 with open('data/eid.txt') as f:
     for line in f:
         eids.append(line.strip())
 
 input_mod = args.input_mod
-# Determine number of subplots needed
-num_sessions = len(eids)
+num_sessions = len(eids)  # Number of subplots needed
 
-# Create figures for R2 and BPS with appropriate number of subplots
-fig_r2, axs_r2 = plt.subplots(1, num_sessions, figsize=(5*num_sessions, 5))
-fig_bps, axs_bps = plt.subplots(1, num_sessions, figsize=(5*num_sessions, 5))
-
+# Loop through each session to create individual figures
 for idx, eid in enumerate(eids):
     me_result = np.load(f'{eid[:5]}_me_result.npy', allow_pickle=True).item()
     of_result = np.load(f'{eid[:5]}_{input_mod}_result.npy', allow_pickle=True).item()
 
-    me_neuron_r2 = np.array(me_result['r2'])
-    of_neuron_r2 = np.array(of_result['r2'])
-
-    me_neuron_bps = np.array(me_result['co_bps'])
-    of_neuron_bps = np.array(of_result['co_bps'])
-    min_bps = np.min([np.min(me_neuron_bps), np.min(of_neuron_bps)])
-    max_bps = np.max([np.max(me_neuron_bps), np.max(of_neuron_bps)])
-
-    of_gt = np.array(of_result['gt'])
-    of_pred = np.array(of_result['pred'])
-
-    op_population_bps = bits_per_spike(of_pred, of_gt)
-
-    me_gt = np.array(me_result['gt'])
-    me_pred = np.array(me_result['pred'])
-
-    me_population_bps = bits_per_spike(me_pred, me_gt)
-
-    me_r2 = np.nanmean([r2_score(me_gt[i], me_pred[i]) for i in range(len(me_gt))])
-    of_r2 = np.nanmean([r2_score(of_gt[i], of_pred[i]) for i in range(len(of_gt))])
-
-    _mean_trial_me = np.mean(me_pred, axis=0).T
-    _mean_trial_of = np.mean(of_pred, axis=0).T
-    _gt = np.mean(of_gt, axis=0).T
-
-    me_neuron_r2 = np.array([r2_score(_gt[i],_mean_trial_me[i]) for i in range(_gt.shape[0])])
-    of_neuron_r2 = np.array([r2_score(_gt[i],_mean_trial_of[i]) for i in range(_gt.shape[0])])
-
-    # select top 10 neurons according to firing rate
-    top_neuron_idx = np.argsort(np.mean(of_gt, axis=(0,1)))[::-1][:10]
-    # top 10 r2 neurons
-    # top_neuron_idx = np.argsort(of_neuron_r2)[::-1][:10]
-
-    me_r2 = np.nanmean(me_neuron_r2)
-    of_r2 = np.nanmean(of_neuron_r2)
-    # me_neuron_r2 = np.nanmean([r2_score(me_gt[i], me_pred[i]) for i in range(len(me_gt))])
-
-    min_r2 = np.min([np.min(me_neuron_r2), np.min(of_neuron_r2)])
-    max_r2 = np.max([np.max(me_neuron_r2), np.max(of_neuron_r2)])
-    # Plot R2 scatter
-    axs_r2[idx].scatter(me_neuron_r2, of_neuron_r2)
-    axs_r2[idx].set_xlabel('ME R2')
-    axs_r2[idx].set_ylabel(f'{input_mod} R2')
-    axs_r2[idx].plot([min_r2, max_r2], [min_r2, max_r2], color='red')  # Line for diagonal
-    axs_r2[idx].legend([f'Session {eid[:5]} Neurons'])
-    axs_r2[idx].set_title(f'ME ({me_r2:.3f}) vs {input_mod} ({of_r2:.3f})')
-
-    # Plot BPS scatter
-    axs_bps[idx].scatter(me_neuron_bps, of_neuron_bps)
-    axs_bps[idx].set_xlabel('ME BPS')
-    axs_bps[idx].set_ylabel(f'{input_mod} BPS')
-    axs_bps[idx].plot([min_bps, max_bps], [min_bps, max_bps], color='red')  # Line for diagonal
-    axs_bps[idx].legend([f'Session {eid[:5]} Neurons'])
-    axs_bps[idx].set_title(f'ME ({me_population_bps:.3f} BPS) vs {input_mod} ({op_population_bps:.3f} BPS)')
+    # Create a main figure with 12 subplots (2 for R2 and BPS, and 10 for top neurons)
+    fig, axs = plt.subplots(12, 1, figsize=(10, 30), gridspec_kw={'height_ratios': [1, 1] + [1]*10})
     
-    for neuron_idx in top_neuron_idx[:10]:
-        gt_neuron = me_gt[...,neuron_idx]
-        me_neuron = me_pred[...,neuron_idx]
-        of_neuron = of_pred[...,neuron_idx]
+    # R2 Scatter Plot
+    axs[0].scatter(me_result['r2'], of_result['r2'])
+    axs[0].set_xlabel('ME R2')
+    axs[0].set_ylabel(f'{input_mod} R2')
+    axs[0].set_title(f'Scatter R2: Session {eid[:5]}')
+    axs[0].plot([0, 1], [0, 1], transform=axs[0].transAxes, color='red')  # Line for diagonal
 
-        fig, axs = plt.subplots(1, 3, figsize=(10, 5))
-        axs[0].imshow(gt_neuron, aspect='auto',cmap='binary')
-        axs[0].set_title(f'GT Neuron idx: {neuron_idx}')
-        axs[1].imshow(me_neuron, aspect='auto',cmap='binary')
-        axs[1].set_title(f'ME, R2: {me_neuron_r2[neuron_idx]:.3f}, CO-BPS: {me_neuron_bps[neuron_idx]:.3f}')
-        axs[2].imshow(of_neuron, aspect='auto',cmap='binary')
-        axs[2].set_title(f'{input_mod}, R2: {of_neuron_r2[neuron_idx]:.3f}, CO-BPS: {of_neuron_bps[neuron_idx]:.3f}')
-        # x label and y label
-        axs[0].set_xlabel('Time', fontsize=12)
-        axs[0].set_ylabel(f'Neuron: {neuron_idx} \n Trial idx', fontsize=12)
-        axs[1].set_xlabel('Time', fontsize=12)
-        axs[2].set_xlabel('Time', fontsize=12)
-        fig.tight_layout()
-        fig.savefig(f'neuron_{neuron_idx}_{eid[:5]}_me.png')
-    exit()
-    
+    # BPS Scatter Plot
+    axs[1].scatter(me_result['co_bps'], of_result['co_bps'])
+    axs[1].set_xlabel('ME BPS')
+    axs[1].set_ylabel(f'{input_mod} BPS')
+    axs[1].set_title(f'Scatter BPS: Session {eid[:5]}')
+    axs[1].plot([0, 1], [0, 1], transform=axs[1].transAxes, color='red')  # Line for diagonal
 
-# Save figures
-fig_r2.tight_layout()
-fig_r2.savefig('scatter_r2_sessions.png')
-fig_bps.tight_layout()
-fig_bps.savefig('scatter_bps_sessions.png')
-
-plt.show()
+    # Top 10 active neurons plots
+    top_neuron_idx = np.argsort(np.mean(of_result['gt'], axis=(0,1)))[::-1][:10]
+    for j, neuron_idx in enumerate(top_neuron_idx):
+        gt_neuron = me_result['gt'][...,neuron_idx]
+        me_neuron = me_result['pred'][...,neuron_idx]
+        of_neuron = of_result['pred'][...,neuron_idx]
+        print(j+2)
+        axs[j+2].imshow(np.hstack([gt_neuron, me_neuron, of_neuron]), aspect='auto', cmap='binary')
+        axs[j+2].set_title(f'Neuron {neuron_idx} GT | ME | {input_mod}')
+        axs[j+2].set_xlabel('Time')
+        axs[j+2].set_ylabel('Trial')
+    fig.tight_layout()
+    fig.savefig(f'{eid[:5]}_session_figure.png')
+    plt.close(fig)  # Close the figure to save memory
