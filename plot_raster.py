@@ -23,6 +23,22 @@ for idx, eid in enumerate(eids):
     me_result = np.load(f'{eid[:5]}_me_result.npy', allow_pickle=True).item()
     of_result = np.load(f'{eid[:5]}_{input_mod}_result.npy', allow_pickle=True).item()
 
+    gt = me_result['gt']
+    me_pred = me_result['pred']
+    of_pred = of_result['pred']
+
+    # calculate population bps 
+    me_bps = bits_per_spike(me_pred, gt)
+    of_bps = bits_per_spike(of_pred, gt)
+
+    # calculate population r2
+    me_r2 = r2_score(gt.flatten(), me_pred.flatten())
+    of_r2 = r2_score(gt.flatten(), of_pred.flatten())
+
+    # neuron-wise r2
+    me_r2_neuron = np.array([r2_score(gt[..., i].flatten(), me_pred[..., i].flatten()) for i in range(gt.shape[-1])])
+    of_r2_neuron = np.array([r2_score(gt[..., i].flatten(), of_pred[..., i].flatten()) for i in range(gt.shape[-1])])
+
     # Determine the number of plots (2 for scatter + 10 neurons)
     fig, axs = plt.subplots(12, 1, figsize=(15, 40))  # 10 neurons + 2 scatter plots, all in one column
     # disable axs ticks
@@ -33,27 +49,27 @@ for idx, eid in enumerate(eids):
         ax.spines['bottom'].set_visible(False)
     min_bps = min(np.min(me_result['co_bps']), np.min(of_result['co_bps']))
     max_bps = max(np.max(me_result['co_bps']), np.max(of_result['co_bps']))
-    min_r2 = min(np.min(me_result['r2']), np.min(of_result['r2']))
-    max_r2 = max(np.max(me_result['r2']), np.max(of_result['r2']))
+    min_r2 = min(np.min(me_r2_neuron), np.min(of_r2_neuron))
+    max_r2 = max(np.max(me_r2_neuron), np.max(of_r2_neuron))
     # R2 Scatter Plot, use entire row
     ax_r2 = plt.subplot2grid((12, 3), (0, 0), colspan=3, fig=fig)
-    ax_r2.scatter(me_result['r2'], of_result['r2'])
+    ax_r2.scatter(me_r2_neuron, of_r2_neuron)
     ax_r2.set_xlim([min_r2, max_r2])
     ax_r2.set_ylim([min_r2, max_r2])
-    ax_r2.plot([min_r2, max_r2], [min_r2, max_r2], 'k--', lw=2)
+    ax_r2.plot([min_r2, max_r2], [min_r2, max_r2], 'k--', lw=2, color='red')
     ax_r2.set_xlabel('ME R2')
     ax_r2.set_ylabel(f'{input_mod} R2')
-    ax_r2.set_title('Scatter R2')
+    ax_r2.set_title(f'EID: {eid[:5]} \n R2 Scatter, ME: {me_r2:.2f}, {input_mod}: {of_r2:.2f}')
 
     # BPS Scatter Plot, use entire row
     ax_bps = plt.subplot2grid((12, 3), (1, 0), colspan=3, fig=fig)
     ax_bps.scatter(me_result['co_bps'], of_result['co_bps'])
     ax_bps.set_xlim([min_bps, max_bps])
     ax_bps.set_ylim([min_bps, max_bps])
-    ax_bps.plot([min_bps, max_bps], [min_bps, max_bps], 'k--', lw=2)
+    ax_bps.plot([min_bps, max_bps], [min_bps, max_bps], 'k--', lw=2, color='red')
     ax_bps.set_xlabel('ME BPS')
     ax_bps.set_ylabel(f'{input_mod} BPS')
-    ax_bps.set_title('Scatter BPS')
+    ax_bps.set_title(f'Scatter BPS, ME: {me_bps:.3f}, {input_mod}: {of_bps:.3f}')
 
     # Top 10 active neurons plots
     top_neuron_idx = np.argsort(np.mean(of_result['gt'], axis=(0, 1)))[::-1][:10]
@@ -72,13 +88,16 @@ for idx, eid in enumerate(eids):
         im_me = axs_me.imshow(me_neuron, aspect='auto', cmap='binary')
         im_of = axs_of.imshow(of_neuron, aspect='auto', cmap='binary')
 
-        axs_gt.set_title(f'Neuron {neuron_idx} GT')
-        axs_me.set_title('ME')
-        axs_of.set_title(f'{input_mod}')
+        axs_gt.set_title(f'Neuron idx: {neuron_idx}, GT')
+        axs_me.set_title(f'ME, R2: {me_r2_neuron[neuron_idx]:.3f}, CO-BPS: {me_result["co_bps"][neuron_idx]:.3f}')
+        axs_of.set_title(f'{input_mod}, R2: {of_r2_neuron[neuron_idx]:.3f}, CO-BPS: {of_result["co_bps"][neuron_idx]:.3f}')
 
-        # figure out
+        # set y label for the first column
+        axs_gt.set_ylabel('Trial IDX')
+        axs_gt.set_xlabel('Time')
+        axs_me.set_xlabel('Time')
+        axs_of.set_xlabel('Time')
         
-
 
     # Adjust spacing and save
     fig.tight_layout()
