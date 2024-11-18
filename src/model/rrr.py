@@ -30,6 +30,7 @@ class RRRGD():
     def __init__(self, train_data, ncomp, l2=0.):
         self.l2=l2
         self.eids = list(train_data.keys())
+        self.withbias = True
 
         np.random.seed(0)
         self.N = 0; self.model = {}
@@ -121,7 +122,7 @@ class RRRGD():
     def predict_y(self, data, eid, k):
         # X: train_data[eid]['X'][0], (K, T, ncoef+1)
         # y: train_data[eid]['y'][0], (K, T, N)
-        beta = self.compute_beta(eid, withbias=False)  # new: no bias
+        beta = self.compute_beta(eid, withbias=self.withbias)  # new: no bias
         X = np2tensor(data[eid]['X'][k]).to(beta.device)
         y = np2tensor(data[eid]['y'][k]).to(beta.device)
         # ypred = predict_torch(beta, X)
@@ -151,7 +152,7 @@ class RRRGD():
         return mses_all
 
     def regression_loss(self):
-        return {eid: self.l2*torch.sum(self.compute_beta(eid, withbias=False)**2) for eid in self.eids}
+        return {eid: self.l2*torch.sum(self.compute_beta(eid, withbias=self.withbias)**2) for eid in self.eids}
 
 """
 train the 
