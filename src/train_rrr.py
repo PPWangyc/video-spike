@@ -43,6 +43,10 @@ def main():
     config = update_config(args.train_config, config)
     config = update_config(args, config)
 
+    with open('data/eid.txt') as file:
+        include_eids = [line.rstrip() for line in file]
+        # include_eids = include_eids[:args.n_sessions]
+    
     # select 100 idx from 120
     idx = np.random.choice(119, 100, replace=False)
     sorted_idx = np.sort(idx)
@@ -50,19 +54,21 @@ def main():
     # set seed
     set_seed(config.seed)
     # set dataset
-    dataset_split_dict = split_dataset(config.dirs.data_dir,eid=args.eid)
+    dataset_split_dict = split_dataset(config.dirs.data_dir,eid=include_eids)
     train_dataloader, val_dataloader, test_dataloader = make_loader(config, dataset_split_dict)
-    meta_data = get_metadata_from_loader(train_dataloader, config)
+    meta_data = get_metadata_from_loader(test_dataloader, config)
     print(f"meta_data: {meta_data}")
-    eid = args.eid
     train_data = {
         eid:
         {
             "X": [], 
             "y": [], 
             "setup": {}
-        }
+        } 
+        for eid in include_eids
     }
+    print(train_data)
+    exit()
     smooth_w = 2; T = 120
     train_X = []; train_y = []
     input_mod = None
@@ -138,6 +144,7 @@ def main():
         if len(train_data[eid]["X"][i].shape) ==2:
             train_data[eid]["X"][i] = torch.tensor(train_data[eid]["X"][i]).unsqueeze(2).numpy()
         print(train_data[eid]["X"][i].shape)
+        # add bias term
         train_data[eid]["X"][i] = np.concatenate(
             [
                 train_data[eid]["X"][i],

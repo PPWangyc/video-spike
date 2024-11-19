@@ -16,11 +16,9 @@
 . ~/.bashrc
 
 cd ..
-
-conda activate vs
 input_mod=$1
-eid=$2
-python src/train_rrr.py --model_config config/model/linear_me.yaml \
+conda activate vs
+python src/create_eid_data.py --model_config config/model/linear_me.yaml \
                     --train_config config/train/rrr.yaml \
                     --input_mod $input_mod
 

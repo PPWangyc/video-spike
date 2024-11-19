@@ -11,6 +11,8 @@ from sklearn.metrics import r2_score as r2_score_sklearn
 from sklearn.metrics import accuracy_score
 import glob
 import pandas as pd
+from tqdm import tqdm
+from scipy.ndimage import gaussian_filter1d
 
 NAME2MODEL = {
     "Linear": Linear,
@@ -196,3 +198,45 @@ def draw_results(df_log, metrics=["bps", "r2", "rsquared", "mse", "mae", "acc"])
     # label y axis
     ax.set_ylabel("bps")
     return fig
+
+def get_rrr_data(dataloader, input_mod):
+    X, y = [], []
+    for batch in tqdm(dataloader):
+        if input_mod == 'whisker-of-video':
+            x_vec = torch.tensor(np.median(batch[input_mod][...,0].numpy(),axis=(2,3)))
+            y_vec = torch.tensor(np.median(batch[input_mod][...,1].numpy(),axis=(2,3)))
+            # x_vec = batch[input_mod][...,0].mean(axis=(2,3))
+            # y_vec = batch[input_mod][...,1].mean(axis=(2,3))
+            value = torch.stack([x_vec, y_vec], dim=2)
+            # took median of x and y
+            
+            X.append(value.numpy())
+        elif input_mod == 'all':
+            block = batch['block'].numpy()
+            choice = batch['choice'].numpy()
+            wheel_speed = batch['wheel-speed'].numpy()
+            me = batch['whisker-motion-energy'].numpy()
+            T = wheel_speed.shape[1]
+            # repeat block and choice for T times
+            block = np.repeat(block, T, axis=1)
+            choice = np.repeat(choice, T, axis=1)
+            me, wheel_speed, choice, block = np.expand_dims(me, axis=2), np.expand_dims(wheel_speed, axis=2), np.expand_dims(choice, axis=2), np.expand_dims(block, axis=2)
+            value = np.concatenate([me, wheel_speed, choice, block], axis=2)
+            X.append(value)
+        elif input_mod == 'other':
+            block = batch['block'].numpy()
+            choice = batch['choice'].numpy()
+            wheel_speed = batch['wheel-speed'].numpy()
+            T = wheel_speed.shape[1]
+            # repeat block and choice for T times
+            block = np.repeat(block, T, axis=1)
+            choice = np.repeat(choice, T, axis=1)
+            wheel_speed, choice, block = np.expand_dims(wheel_speed, axis=2), np.expand_dims(choice, axis=2), np.expand_dims(block, axis=2)
+            value = np.concatenate([wheel_speed, choice, block], axis=2)
+            X.append(value)
+        else:
+            X.append(batch[input_mod].numpy())
+        y.append(batch["ap"].numpy())
+    X = np.concatenate(X, axis=0)
+    y = np.concatenate(y, axis=0)
+    return X, y

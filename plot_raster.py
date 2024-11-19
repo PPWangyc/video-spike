@@ -3,7 +3,36 @@ import matplotlib.pyplot as plt
 from utils.metric_utils import bits_per_spike
 from sklearn.metrics import r2_score
 import argparse
+import torch
 
+# load rrr model
+rrr_result = torch.load('tmp')['RRRGD_model']
+eids = rrr_result['eids']
+print(eids)
+model = rrr_result['model']
+V_numpy = model['V'].detach().cpu().numpy()
+# Create a lineplot of the weights
+fig, ax = plt.subplots(1, 1, figsize=(15, 10))
+ax.plot(V_numpy.flatten(), color='black')
+# add segmentation line for each rank
+for i in range(1, V_numpy.shape[0]):
+    ax.axvline(x=i*V_numpy.shape[1], color='red', linestyle='--')
+ax.set_xlabel('Weight Index', fontsize=15)
+ax.set_ylabel('Weight Value', fontsize=15)
+fig.savefig('rrr_model_weights_line.png')
+exit()
+
+ax.set_title(f'RRR Model Weights, EID: {eids[0][:5]}', fontsize=20)
+# Create a heatmap
+fig, ax = plt.subplots(1, 1, figsize=(15, 10))
+im = ax.imshow(V_numpy, aspect='auto', cmap='binary')
+ax.set_title(f'RRR Model Weights, EID: {eids[0][:5]}', fontsize=20)
+ax.set_xlabel('Time Dimension', fontsize=15)
+ax.set_ylabel('Rank', fontsize=15)
+fig.colorbar(im, ax=ax)
+fig.savefig('rrr_model_weights.png')
+plt.close(fig)
+exit()
 # Argument parsing setup
 parser = argparse.ArgumentParser(description='Plot scatter plots for ME and OF')
 parser.add_argument('--input_mod', type=str, default='of-2d', help='Input modality')
@@ -72,7 +101,8 @@ for idx, eid in enumerate(eids):
     ax_bps.set_title(f'BPS Scatter, ME BPS: {me_bps:.3f}, {input_mod} BPS: {of_bps:.3f}')
 
     # Top 10 active neurons plots
-    top_neuron_idx = np.argsort(np.mean(of_result['gt'], axis=(0, 1)))[::-1][:10]
+    # top_neuron_idx = np.argsort(np.mean(of_result['gt'], axis=(0, 1)))[::-1][:10]
+    top_neuron_idx = np.argsort(of_r2_neuron)[::-1][:10]
     for j, neuron_idx in enumerate(top_neuron_idx):
         row = j + 2  # Start from the 3rd row
         gt_neuron = me_result['gt'][..., neuron_idx]
