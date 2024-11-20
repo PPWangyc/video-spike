@@ -94,6 +94,13 @@ def _std(arr):
     arr = (arr - mean) / std
     return arr, mean, std
 
+def _one_hot(arr, T):
+    uni = np.sort(np.unique(arr))
+    ret = np.zeros((len(arr), T, len(uni)))
+    for i, _uni in enumerate(uni):
+        ret[:,:,i] = (arr == _uni)
+    return ret
+
 # metrics list, return different metrics results
 def metrics_list(gt, pred, metrics=["bps", "r2", "rsquared", "mse", "mae", "acc"], device="cpu"):
     results = {}

@@ -30,7 +30,7 @@ class RRRGD():
     def __init__(self, train_data, ncomp, l2=0.):
         self.l2=l2
         self.eids = list(train_data.keys())
-        self.withbias = True
+        self.withbias = False
 
         np.random.seed(0)
         self.N = 0; self.model = {}

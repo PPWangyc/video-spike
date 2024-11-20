@@ -70,7 +70,7 @@ def main():
         for eid in include_eids
     }
     # orig input, gt data, without spike smoothing
-    for eid in include_eids[:2]:
+    for eid in include_eids:
         print("processing eid: ", eid)
         # set dataset
         dataset_split_dict = split_dataset(config.dirs.data_dir,eid=eid)
