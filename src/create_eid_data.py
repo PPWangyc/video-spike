@@ -49,6 +49,8 @@ def main():
     elif args.input_mod == 'other':
         # wheel_speed, choice, block
         input_mod = 'other'
+    elif args.input_mod == 'of-all':
+        input_mod = 'of-all'
 
     with open('data/eid.txt') as file:
         include_eids = [line.rstrip() for line in file]

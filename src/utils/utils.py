@@ -241,6 +241,22 @@ def get_rrr_data(dataloader, input_mod):
             wheel_speed, choice, block = np.expand_dims(wheel_speed, axis=2), np.expand_dims(choice, axis=2), np.expand_dims(block, axis=2)
             value = np.concatenate([wheel_speed, choice, block], axis=2)
             X.append(value)
+        elif input_mod == 'of-all':
+            block = batch['block'].numpy()
+            choice = batch['choice'].numpy()
+            wheel_speed = batch['wheel-speed'].numpy()
+            of_x = torch.tensor(np.median(batch['whisker-of-video'][...,0].numpy(),axis=(2,3)))
+            of_y = torch.tensor(np.median(batch['whisker-of-video'][...,1].numpy(),axis=(2,3)))
+            T = wheel_speed.shape[1]
+            # repeat block and choice for T times
+            block = np.repeat(block, T, axis=1)
+            choice = np.repeat(choice, T, axis=1)
+            of = torch.stack([of_x, of_y], dim=2)
+            of_last = of[:,-1]
+            of = torch.cat([of, of_last.unsqueeze(1)], dim=1)
+            wheel_speed, choice, block = np.expand_dims(wheel_speed, axis=2), np.expand_dims(choice, axis=2), np.expand_dims(block, axis=2)
+            value = np.concatenate([of, wheel_speed, choice, block], axis=2)
+            X.append(value)
         else:
             X.append(batch[input_mod].numpy())
         y.append(batch["ap"].numpy())

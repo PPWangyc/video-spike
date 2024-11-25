@@ -50,22 +50,24 @@ def main():
     
     input_mod = None
     if args.input_mod =='me':
-        input_mod = 'whisker-motion-energy'
+        input_mod = 'me'
     elif args.input_mod == 'of':
         input_mod = 'whisker-of'
     elif args.input_mod == 'of-2d':
-        input_mod = 'whisker-of-2d'
+        input_mod = 'of-2d'
     elif args.input_mod == 'of-2d-v':
         input_mod = 'whisker-of-video'
     elif args.input_mod == 'all':
         input_mod = 'all'
     elif args.input_mod == 'other':
         input_mod = 'other'
+    elif args.input_mod == 'me-all':
+        input_mod = 'all'
+    elif args.input_mod == 'of-all':
+        input_mod = 'of-all'
     
     # set dataset
-    train_data = np.load(f'data/data_rrr_{args.input_mod}.npy', allow_pickle=True).item()
-    old_indices = np.linspace(0, 119, 120)
-    new_indices = np.linspace(0, 119, 100)
+    train_data = np.load(f'data/data_rrr_{input_mod}.npy', allow_pickle=True).item()
     smooth_w = 2; T = 100
     ground_truth = {}
     # apply gaussian filteer to the ground truth
@@ -74,23 +76,22 @@ def main():
         ground_truth[eid] = train_data[eid]["y"][1]
         for i in range(2):
             train_data[eid]["y"][i] = gaussian_filter1d(train_data[eid]["y"][i], smooth_w, axis=1)
-            # interpolate the input data
-            # N, _, D = train_data[eid]["X"][i].shape
-            # new_data = np.zeros((N, 100, D))
-            # for n in range(new_data.shape[0]):
-            #     for d in range(new_data.shape[2]):
-            #         new_data[n,:,d] = np.interp(new_indices, old_indices, train_data[eid]["X"][i][n,:,d])
-            
-            input = train_data[eid]["X"][i]
-            choice = input[:,0,-2:-1]
-            block = input[:,0,-1:]
-            choice = _one_hot(choice,120)
-            block = _one_hot(block,120)
-            input = np.concatenate([choice, block,input[...,:2]], axis=2)
-            train_data[eid]["X"][i] = input
+            # one-hot encoding for choice and block
+            if args.input_mod != 'me' and args.input_mod != 'of-2d':
+                input = train_data[eid]["X"][i]
+                choice = input[:,0,-2:-1]
+                block = input[:,0,-1:]
+                if args.input_mod == 'me-all' or args.input_mod == 'of-all':
+                    const = 3
+                else:
+                    const = 2
+                contin_dim = input.shape[2]-const
+                choice = _one_hot(choice,120)
+                block = _one_hot(block,120)
+                input = np.concatenate([choice, block,input[...,-2-contin_dim:-2]], axis=2)
+                train_data[eid]["X"][i] = input
 
     for eid in train_data:
-
         _, mean_X, std_X = _std(train_data[eid]["X"][0])
         _, mean_y, std_y = _std(train_data[eid]["y"][0])
 
