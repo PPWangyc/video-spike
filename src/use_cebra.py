@@ -68,3 +68,11 @@ train_data[eid]["y"].append(test_y)
 cebra_test = get_cebra_embedding(test_X, out_dim=out_dim)
 train_data[eid]["X"].append(cebra_test)
 
+print(train_data[eid]["X"][0].shape)
+print(train_data[eid]["y"][0].shape)
+print(train_data[eid]["X"][1].shape)
+print(train_data[eid]["y"][1].shape)
+
+
+# save data
+np.save(f"data/data_rrr_cebra_{eid[:5]}.npy", train_data)
