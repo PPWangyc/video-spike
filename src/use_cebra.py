@@ -1,29 +1,70 @@
+from utils.utils import (
+    get_args,
+    set_seed,
+    get_rrr_data,
+    get_cebra_embedding,
+    NAME2MODEL
+)
+from utils.dataset_utils import (
+    split_dataset,
+    get_metadata_from_loader
+)
+from utils.utils import (
+    _std
+)
+from utils.metric_utils import (
+    bits_per_spike,
+)
+from utils.config_utils import (
+    config_from_kwargs,
+    update_config
+)
+from loader.make import (
+    make_loader
+)
 import cebra
 import numpy as np
-timesteps = 5000
-neurons = 50
-out_dim = 8
+from tqdm import tqdm
 
-neural_data = np.random.normal(0,1,(timesteps, neurons))
-print(neural_data.shape)
-single_cebra_model = cebra.CEBRA(batch_size=512,
-                                 output_dimension=out_dim,
-                                 max_iterations=10000,
-                                 max_adapt_iterations=10)
-print(single_cebra_model)
-single_cebra_model.fit(neural_data)
-single_cebra_model.save('cebra.pt')
-embedding = single_cebra_model.transform(neural_data)
-assert(embedding.shape == (timesteps, out_dim))
-ax = cebra.plot_embedding(embedding,None)
-fig = ax.figure
-fig.savefig('embedding.png')
-exit()
-# Use Cebra's plot_loss function to get the axes object for the loss curve
-ax = cebra.plot_loss(single_cebra_model)
+# set config
+args = get_args()
+kwargs = {"model": "include:{}".format(args.model_config)}
+config = config_from_kwargs(kwargs)
+config = update_config(args.train_config, config)
+config = update_config(args, config)
+# set seed
+set_seed(config.seed)
 
-# Get the figure from the axes object
-fig = ax.figure
+eid = args.eid
+dataset_split_dict = split_dataset(config.dirs.data_dir,eid=eid)
+train_dataloader, val_dataloader, test_dataloader = make_loader(config, dataset_split_dict)
+meta_data = get_metadata_from_loader(test_dataloader, config)
+print(f"meta_data: {meta_data}")
 
-# Save the figure using the savefig method from the figure object
-fig.savefig('loss_curve.png')  # Save the plot to a file
+train_data = {
+        eid:
+        {
+            "X": [], 
+            "y": [], 
+            "setup": {}
+        } 
+        for eid in [eid]
+    }
+out_dim = 3
+
+# Cebra embeddings
+# get train whisker-video
+train_X , train_y = get_rrr_data(test_dataloader, 'whisker-video')
+# append neural activity to train data as y
+train_data[eid]["y"].append(train_y)
+# get cebra embeddings
+cebra_train = get_cebra_embedding(train_X, out_dim=out_dim)
+# append cebra embeddings to train data as X
+train_data[eid]["X"].append(cebra_train)
+
+# Test data
+test_X, test_y = get_rrr_data(test_dataloader, 'whisker-video')
+train_data[eid]["y"].append(test_y)
+cebra_test = get_cebra_embedding(test_X, out_dim=out_dim)
+train_data[eid]["X"].append(cebra_test)
+

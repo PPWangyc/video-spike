@@ -13,6 +13,7 @@ import glob
 import pandas as pd
 from tqdm import tqdm
 from scipy.ndimage import gaussian_filter1d
+import cebra
 
 NAME2MODEL = {
     "Linear": Linear,
@@ -257,9 +258,33 @@ def get_rrr_data(dataloader, input_mod):
             wheel_speed, choice, block = np.expand_dims(wheel_speed, axis=2), np.expand_dims(choice, axis=2), np.expand_dims(block, axis=2)
             value = np.concatenate([of, wheel_speed, choice, block], axis=2)
             X.append(value)
+        elif input_mod == 'whisker-video':
+            value = batch[input_mod].numpy()
+            X.append(value)
         else:
             X.append(batch[input_mod].numpy())
         y.append(batch["ap"].numpy())
     X = np.concatenate(X, axis=0)
     y = np.concatenate(y, axis=0)
     return X, y
+
+def get_cebra_embedding(video, out_dim=3):
+    # video: (N, T, C, H, W), C = 1 grayscale
+    # output: N, T, out_dim
+    cebra_embeddings = []
+    for i in tqdm(range(video.shape[0])):
+        # (T, C, H, W) -> (T, D)
+        video_data = video[i].squeeze(1)
+        t, h, w = video_data.shape
+        video_data = video_data.reshape(t, -1)
+        # T, D
+        single_cebra_model = cebra.CEBRA(batch_size=32,
+                                        output_dimension=out_dim,
+                                        max_iterations=5000,
+                                        max_adapt_iterations=5000)
+        single_cebra_model.fit(video_data)
+        embedding = single_cebra_model.transform(video_data)
+        assert(embedding.shape == (t, out_dim))
+        cebra_embeddings.append(embedding)
+    cebra_embeddings = np.array(cebra_embeddings)
+    return cebra_embeddings

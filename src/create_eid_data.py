@@ -34,6 +34,8 @@ def main():
     config = config_from_kwargs(kwargs)
     config = update_config(args.train_config, config)
     config = update_config(args, config)
+    # set seed
+    set_seed(config.seed)
 
     if args.input_mod =='me':
         input_mod = 'whisker-motion-energy'
@@ -60,8 +62,6 @@ def main():
     idx = np.random.choice(119, 100, replace=False)
     sorted_idx = np.sort(idx)
 
-    # set seed
-    set_seed(config.seed)
     train_data = {
         eid:
         {

@@ -16,3 +16,4 @@ data/
 *.npy
 *tmp*
 *.npz
+*pt*
