@@ -3,6 +3,7 @@ from utils.utils import (
     set_seed,
     get_rrr_data,
     get_cebra_embedding,
+    get_pca_embedding,
     NAME2MODEL
 )
 from utils.dataset_utils import (
@@ -58,15 +59,19 @@ train_X , train_y = get_rrr_data(train_dataloader, 'whisker-video')
 # append neural activity to train data as y
 train_data[eid]["y"].append(train_y)
 # get cebra embeddings
-cebra_train = get_cebra_embedding(train_X, out_dim=out_dim)
-# append cebra embeddings to train data as X
-train_data[eid]["X"].append(cebra_train)
+pca_train = get_pca_embedding(train_X, out_dim=out_dim)
+train_data[eid]["X"].append(pca_train)
+# cebra_train = get_cebra_embedding(train_X, out_dim=out_dim)
+# # append cebra embeddings to train data as X
+# train_data[eid]["X"].append(cebra_train)
 
 # Test data
 test_X, test_y = get_rrr_data(test_dataloader, 'whisker-video')
 train_data[eid]["y"].append(test_y)
-cebra_test = get_cebra_embedding(test_X, out_dim=out_dim)
-train_data[eid]["X"].append(cebra_test)
+pca_test = get_pca_embedding(test_X, out_dim=out_dim)
+train_data[eid]["X"].append(pca_test)
+# cebra_test = get_cebra_embedding(test_X, out_dim=out_dim)
+# train_data[eid]["X"].append(cebra_test)
 
 print(train_data[eid]["X"][0].shape)
 print(train_data[eid]["y"][0].shape)
@@ -75,4 +80,5 @@ print(train_data[eid]["y"][1].shape)
 
 
 # save data
-np.save(f"data/data_rrr_cebra_{eid[:5]}.npy", train_data)
+# np.save(f"data/data_rrr_cebra_{eid[:5]}.npy", train_data)
+np.save(f"data/data_rrr_pca_{eid[:5]}.npy", train_data)

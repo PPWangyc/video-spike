@@ -14,6 +14,7 @@ import pandas as pd
 from tqdm import tqdm
 from scipy.ndimage import gaussian_filter1d
 import cebra
+from sklearn.decomposition import PCA
 
 NAME2MODEL = {
     "Linear": Linear,
@@ -213,6 +214,10 @@ def get_rrr_data(dataloader, input_mod):
         if input_mod == 'whisker-of-video':
             x_vec = torch.tensor(np.median(batch[input_mod][...,0].numpy(),axis=(2,3)))
             y_vec = torch.tensor(np.median(batch[input_mod][...,1].numpy(),axis=(2,3)))
+            # # normalize x and y to 0-1
+            # for i in range(x_vec.shape[0]):
+            #     x_vec[i] = (x_vec[i] - x_vec[i].min()) / (x_vec[i].max() - x_vec[i].min())
+            #     y_vec[i] = (y_vec[i] - y_vec[i].min()) / (y_vec[i].max() - y_vec[i].min())
             # x_vec = batch[input_mod][...,0].mean(axis=(2,3))
             # y_vec = batch[input_mod][...,1].mean(axis=(2,3))
             value = torch.stack([x_vec, y_vec], dim=2)
@@ -235,6 +240,8 @@ def get_rrr_data(dataloader, input_mod):
             block = batch['block'].numpy()
             choice = batch['choice'].numpy()
             wheel_speed = batch['wheel-speed'].numpy()
+            # for i in range(wheel_speed.shape[0]):
+            #     wheel_speed[i] = (wheel_speed[i] - wheel_speed[i].min()) / (wheel_speed[i].max() - wheel_speed[i].min())
             T = wheel_speed.shape[1]
             # repeat block and choice for T times
             block = np.repeat(block, T, axis=1)
@@ -248,6 +255,10 @@ def get_rrr_data(dataloader, input_mod):
             wheel_speed = batch['wheel-speed'].numpy()
             of_x = torch.tensor(np.median(batch['whisker-of-video'][...,0].numpy(),axis=(2,3)))
             of_y = torch.tensor(np.median(batch['whisker-of-video'][...,1].numpy(),axis=(2,3)))
+            # for i in range(of_x.shape[0]):
+            #     of_x[i] = (of_x[i] - of_x[i].min()) / (of_x[i].max() - of_x[i].min())
+            #     of_y[i] = (of_y[i] - of_y[i].min()) / (of_y[i].max() - of_y[i].min())
+            #     wheel_speed[i] = (wheel_speed[i] - wheel_speed[i].min()) / (wheel_speed[i].max() - wheel_speed[i].min())
             T = wheel_speed.shape[1]
             # repeat block and choice for T times
             block = np.repeat(block, T, axis=1)
@@ -261,6 +272,11 @@ def get_rrr_data(dataloader, input_mod):
         elif input_mod == 'whisker-video':
             value = batch[input_mod].numpy()
             X.append(value)
+        elif input_mod == 'wheel-speed':
+            value = batch[input_mod].numpy()
+            # for i in range(value.shape[0]):
+            #     value[i] = (value[i] - value[i].min()) / (value[i].max() - value[i].min())
+            X.append(value)
         else:
             X.append(batch[input_mod].numpy())
         y.append(batch["ap"].numpy())
@@ -268,7 +284,7 @@ def get_rrr_data(dataloader, input_mod):
     y = np.concatenate(y, axis=0)
     return X, y
 
-def get_cebra_embedding(video, out_dim=3):
+def get_cebra_embedding(video, out_dim=3, save=False):
     # video: (N, T, C, H, W), C = 1 grayscale
     # output: N, T, out_dim
     cebra_embeddings = []
@@ -286,5 +302,31 @@ def get_cebra_embedding(video, out_dim=3):
         embedding = single_cebra_model.transform(video_data)
         assert(embedding.shape == (t, out_dim))
         cebra_embeddings.append(embedding)
+
+        if save:
+            ax = cebra.plot_loss(single_cebra_model)
+            fig = ax.get_figure()
+            fig.savefig("cebra_loss.png")
+            exit()
+
     cebra_embeddings = np.array(cebra_embeddings)
     return cebra_embeddings
+
+def get_pca_embedding(video, out_dim=1):
+    # video: (N, T, C, H, W), C = 1 grayscale
+    # output: N, T, out_dim
+    import time
+    pca_embeddings = []
+    for i in tqdm(range(video.shape[0])):
+        # (T, C, H, W) -> (T, D)
+        video_data = video[i].squeeze(1)
+        t, h, w = video_data.shape
+        video_data = video_data.reshape(t, -1)
+        # T, D
+        pca = PCA(n_components=out_dim)
+        embedding = pca.fit_transform(video_data)
+        assert(embedding.shape == (t, out_dim))
+        pca_embeddings.append(embedding)
+
+    pca_embeddings = np.array(pca_embeddings)
+    return pca_embeddings

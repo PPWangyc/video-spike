@@ -42,7 +42,7 @@ def main():
     elif args.input_mod == 'of':
         input_mod = 'whisker-of'
     elif args.input_mod == 'of-2d':
-        input_mod = 'whisker-of-2d'
+        input_mod = 'whisker-of-video'
     elif args.input_mod == 'of-2d-v':
         input_mod = 'whisker-of-video'
     elif args.input_mod == 'all':
@@ -53,6 +53,10 @@ def main():
         input_mod = 'other'
     elif args.input_mod == 'of-all':
         input_mod = 'of-all'
+    elif args.input_mod == 'ws':
+        input_mod = 'wheel-speed'
+    elif args.input_mod == 'whisker-video':
+        input_mod = 'whisker-video'
 
     with open('data/eid.txt') as file:
         include_eids = [line.rstrip() for line in file]
