@@ -65,6 +65,8 @@ def main():
         input_mod = 'all'
     elif args.input_mod == 'of-all':
         input_mod = 'of-all'
+    elif args.input_mod == 'cebra':
+        input_mod = 'cebra'
     
     # set dataset
     train_data = np.load(f'data/data_rrr_{input_mod}.npy', allow_pickle=True).item()
@@ -76,6 +78,9 @@ def main():
         ground_truth[eid] = train_data[eid]["y"][1]
         for i in range(2):
             train_data[eid]["y"][i] = gaussian_filter1d(train_data[eid]["y"][i], smooth_w, axis=1)
+            if args.input_mod =='cebra':
+                print(train_data[eid]["X"][i].shape)
+                continue
             # one-hot encoding for choice and block
             if args.input_mod != 'me' and args.input_mod != 'of-2d':
                 input = train_data[eid]["X"][i]
@@ -128,6 +133,8 @@ def main():
     result = {}
     test_bps = []
     for eid in train_data:
+        if '03d9a09' in eid:
+            continue
         _train_data = {eid:train_data[eid]}
         model, mse_val = train_model_main(
             train_data=_train_data,
@@ -187,6 +194,7 @@ def main():
         }
     print(result.keys())
     print('mean bps:', np.mean(test_bps))
+    print(f"Total num of eid: {len(result.keys())}")
     np.save(f'{args.input_mod}_result.npy', result)
     
     
