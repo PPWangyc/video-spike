@@ -58,18 +58,32 @@ out_dim = 3
 train_X , train_y = get_rrr_data(train_dataloader, 'whisker-video')
 # append neural activity to train data as y
 train_data[eid]["y"].append(train_y)
+
+# Test data
+test_X, test_y = get_rrr_data(test_dataloader, 'whisker-video')
+train_data[eid]["y"].append(test_y)
+
+all_X = np.concatenate([train_X, test_X], axis=0)
+train_idx, test_idx = np.arange(train_X.shape[0]), np.arange(train_X.shape[0], all_X.shape[0])
+print(all_X.shape)
 # get cebra embeddings
-pca_train = get_pca_embedding(train_X, out_dim=out_dim)
+# pca_train = get_pca_embedding(train_X, out_dim=out_dim)
+pca_all = get_pca_embedding(all_X, out_dim=out_dim)
+print(pca_all.shape)
+pca_train = pca_all[train_idx]
+pca_test = pca_all[test_idx]
+print(pca_train.shape, pca_test.shape)
 train_data[eid]["X"].append(pca_train)
+train_data[eid]["X"].append(pca_test)
 # cebra_train = get_cebra_embedding(train_X, out_dim=out_dim)
 # # append cebra embeddings to train data as X
 # train_data[eid]["X"].append(cebra_train)
 
 # Test data
-test_X, test_y = get_rrr_data(test_dataloader, 'whisker-video')
-train_data[eid]["y"].append(test_y)
-pca_test = get_pca_embedding(test_X, out_dim=out_dim)
-train_data[eid]["X"].append(pca_test)
+# test_X, test_y = get_rrr_data(test_dataloader, 'whisker-video')
+# train_data[eid]["y"].append(test_y)
+# pca_test = get_pca_embedding(test_X, out_dim=out_dim)
+# train_data[eid]["X"].append(pca_test)
 # cebra_test = get_cebra_embedding(test_X, out_dim=out_dim)
 # train_data[eid]["X"].append(cebra_test)
 

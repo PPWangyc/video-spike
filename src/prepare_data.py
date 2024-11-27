@@ -180,7 +180,6 @@ for eid_idx, eid in enumerate(include_eids):
             ses=eid[:5],
             trial=trial_id,
         )
-        exit()
 
         # add prefix to keys
         whisker_of = {f'whisker-{key}': value for key, value in whisker_of.items()}
@@ -198,18 +197,17 @@ for eid_idx, eid in enumerate(include_eids):
             out_whisker_video.write(whisker_video[i])
         out_whisker_video.release()
         
-        whole_of = get_optic_flow(
-            video=trial_video, 
-            save_path=None,
-            ses=eid[:5],
-            trial=trial_id
-        )
-        whole_of = {f'whole-{key}': value for key, value in whole_of.items()}
-
+        # whole_of = get_optic_flow(
+        #     video=trial_video, 
+        #     save_path=None,
+        #     ses=eid[:5],
+        #     trial=trial_id
+        # )
+        # whole_of = {f'whole-{key}': value for key, value in whole_of.items()}
         trial_data = {
             'ap': spike,
             **whisker_of,
-            **whole_of,
+            # **whole_of,
             **beh
         }
         # each key in trial_data add .pyd

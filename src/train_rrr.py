@@ -69,6 +69,8 @@ def main():
         input_mod = 'cebra'
     elif args.input_mod == 'pca':
         input_mod = 'pca'
+    elif args.input_mod =='ws':
+        input_mod = 'ws'
     
     # set dataset
     train_data = np.load(f'data/data_rrr_{input_mod}.npy', allow_pickle=True).item()
@@ -83,7 +85,7 @@ def main():
         ground_truth[eid] = train_data[eid]["y"][1]
         for i in range(2):
             train_data[eid]["y"][i] = gaussian_filter1d(train_data[eid]["y"][i], smooth_w, axis=1)
-            if args.input_mod =='cebra' or args.input_mod == 'pca':
+            if args.input_mod =='cebra' or args.input_mod == 'pca' or args.input_mod == 'ws':
                 print(train_data[eid]["X"][i].shape)
                 continue
             # one-hot encoding for choice and block

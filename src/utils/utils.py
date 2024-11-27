@@ -312,21 +312,28 @@ def get_cebra_embedding(video, out_dim=3, save=False):
     cebra_embeddings = np.array(cebra_embeddings)
     return cebra_embeddings
 
-def get_pca_embedding(video, out_dim=1):
+def get_pca_embedding(video, out_dim=5):
     # video: (N, T, C, H, W), C = 1 grayscale
     # output: N, T, out_dim
-    import time
-    pca_embeddings = []
-    for i in tqdm(range(video.shape[0])):
-        # (T, C, H, W) -> (T, D)
-        video_data = video[i].squeeze(1)
-        t, h, w = video_data.shape
-        video_data = video_data.reshape(t, -1)
-        # T, D
-        pca = PCA(n_components=out_dim)
-        embedding = pca.fit_transform(video_data)
-        assert(embedding.shape == (t, out_dim))
-        pca_embeddings.append(embedding)
+    video_data = video.squeeze(2)
+    n, t, h, w = video_data.shape
+    print(n,t,h,w)
+    video_data = video_data.reshape(n*t, -1)
+    pca = PCA(n_components=out_dim)
+    pca_embeddings = pca.fit_transform(video_data)
+    assert(pca_embeddings.shape == (n*t, out_dim))
+    return pca_embeddings.reshape(n, t, out_dim)
+    # pca_embeddings = []
+    # for i in tqdm(range(video.shape[0])):
+    #     # (T, C, H, W) -> (T, D)
+    #     video_data = video[i].squeeze(1)
+    #     t, h, w = video_data.shape
+    #     video_data = video_data.reshape(t, -1)
+    #     # T, D
+    #     pca = PCA(n_components=out_dim)
+    #     embedding = pca.fit_transform(video_data)
+    #     assert(embedding.shape == (t, out_dim))
+    #     pca_embeddings.append(embedding)
 
-    pca_embeddings = np.array(pca_embeddings)
+    # pca_embeddings = np.array(pca_embeddings)
     return pca_embeddings
