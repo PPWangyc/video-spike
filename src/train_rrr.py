@@ -140,8 +140,6 @@ def main():
     result = {}
     test_bps = []
     for eid in eids:
-        if '03d9a09' in eid:
-            continue
         _train_data = {eid:train_data[eid]}
         model, mse_val = train_model_main(
             train_data=_train_data,

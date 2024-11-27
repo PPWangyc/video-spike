@@ -176,7 +176,7 @@ for eid_idx, eid in enumerate(include_eids):
         }
         whisker_of = get_optic_flow(
             video=whisker_video, 
-            save_path=f'{eid[:5]}_of.mp4',
+            save_path=None,
             ses=eid[:5],
             trial=trial_id,
         )

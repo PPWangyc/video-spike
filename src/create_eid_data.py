@@ -61,7 +61,7 @@ def main():
     with open('data/eid.txt') as file:
         include_eids = [line.rstrip() for line in file]
         # include_eids = include_eids[:args.n_sessions]
-    
+
     # select 100 idx from 120
     idx = np.random.choice(119, 100, replace=False)
     sorted_idx = np.sort(idx)

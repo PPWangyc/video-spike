@@ -287,27 +287,43 @@ def get_rrr_data(dataloader, input_mod):
 def get_cebra_embedding(video, out_dim=3, save=False):
     # video: (N, T, C, H, W), C = 1 grayscale
     # output: N, T, out_dim
-    cebra_embeddings = []
-    for i in tqdm(range(video.shape[0])):
-        # (T, C, H, W) -> (T, D)
-        video_data = video[i].squeeze(1)
-        t, h, w = video_data.shape
-        video_data = video_data.reshape(t, -1)
-        # T, D
-        single_cebra_model = cebra.CEBRA(batch_size=32,
-                                        output_dimension=out_dim,
-                                        max_iterations=5000,
-                                        max_adapt_iterations=5000)
-        single_cebra_model.fit(video_data)
-        embedding = single_cebra_model.transform(video_data)
-        assert(embedding.shape == (t, out_dim))
-        cebra_embeddings.append(embedding)
+    video_data = video.squeeze(2)
+    n, t, h, w = video_data.shape
+    print(n,t,h,w)
+    video_data = video_data.reshape(n*t, -1)
+    single_cebra_model = cebra.CEBRA(batch_size=512,
+                                    model_architecture='offset10-model',
+                                    output_dimension=out_dim,
+                                    max_iterations=5000,
+                                    max_adapt_iterations=5000)
+    single_cebra_model.fit(video_data)
+    embedding = single_cebra_model.transform(video_data)
+    assert(embedding.shape == (n*t, out_dim))
 
-        if save:
-            ax = cebra.plot_loss(single_cebra_model)
-            fig = ax.get_figure()
-            fig.savefig("cebra_loss.png")
-            exit()
+    if save:
+        ax = cebra.plot_loss(single_cebra_model)
+        fig = ax.get_figure()
+        fig.savefig("cebra_loss.png")
+
+        ax = cebra.plot_embedding(embedding)
+        fig = ax.get_figure()
+        fig.savefig("cebra_embedding.png")
+    return embedding.reshape(n, t, out_dim)
+    # cebra_embeddings = []
+    # for i in tqdm(range(video.shape[0])):
+    #     # (T, C, H, W) -> (T, D)
+    #     video_data = video[i].squeeze(1)
+    #     t, h, w = video_data.shape
+    #     video_data = video_data.reshape(t, -1)
+    #     # T, D
+    #     single_cebra_model = cebra.CEBRA(batch_size=32,
+    #                                     output_dimension=out_dim,
+    #                                     max_iterations=5000,
+    #                                     max_adapt_iterations=5000)
+    #     single_cebra_model.fit(video_data)
+    #     embedding = single_cebra_model.transform(video_data)
+    #     assert(embedding.shape == (t, out_dim))
+    #     cebra_embeddings.append(embedding)
 
     cebra_embeddings = np.array(cebra_embeddings)
     return cebra_embeddings

@@ -35,7 +35,8 @@ config = update_config(args.train_config, config)
 config = update_config(args, config)
 # set seed
 set_seed(config.seed)
-
+use_pca = False
+label = 'cebra' if not use_pca else 'pca'
 eid = args.eid
 dataset_split_dict = split_dataset(config.dirs.data_dir,eid=eid)
 train_dataloader, val_dataloader, test_dataloader = make_loader(config, dataset_split_dict)
@@ -51,7 +52,7 @@ train_data = {
         } 
         for eid in [eid]
     }
-out_dim = 3
+out_dim = 5
 
 # Cebra embeddings
 # get train whisker-video
@@ -67,14 +68,11 @@ all_X = np.concatenate([train_X, test_X], axis=0)
 train_idx, test_idx = np.arange(train_X.shape[0]), np.arange(train_X.shape[0], all_X.shape[0])
 print(all_X.shape)
 # get cebra embeddings
-# pca_train = get_pca_embedding(train_X, out_dim=out_dim)
-pca_all = get_pca_embedding(all_X, out_dim=out_dim)
-print(pca_all.shape)
-pca_train = pca_all[train_idx]
-pca_test = pca_all[test_idx]
-print(pca_train.shape, pca_test.shape)
-train_data[eid]["X"].append(pca_train)
-train_data[eid]["X"].append(pca_test)
+all_X = get_pca_embedding(all_X, out_dim=out_dim) if use_pca else get_cebra_embedding(all_X, out_dim=out_dim,save=True)
+train_X = all_X[train_idx]
+test_X = all_X[test_idx]
+train_data[eid]["X"].append(train_X)
+train_data[eid]["X"].append(test_X)
 # cebra_train = get_cebra_embedding(train_X, out_dim=out_dim)
 # # append cebra embeddings to train data as X
 # train_data[eid]["X"].append(cebra_train)
@@ -95,4 +93,4 @@ print(train_data[eid]["y"][1].shape)
 
 # save data
 # np.save(f"data/data_rrr_cebra_{eid[:5]}.npy", train_data)
-np.save(f"data/data_rrr_pca_{eid[:5]}.npy", train_data)
+np.save(f"data/data_rrr_{label}_{eid[:5]}.npy", train_data)
