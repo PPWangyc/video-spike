@@ -196,7 +196,10 @@ for eid_idx, eid in enumerate(include_eids):
         for i in range(whisker_video.shape[0]):
             out_whisker_video.write(whisker_video[i])
         out_whisker_video.release()
-        
+        video_frame = whisker_video.shape[0]
+        interval = intervals[trial_id]
+        time_start, time_end = interval[0], interval[1]
+        timestamp = np.linspace(time_start, time_end, video_frame)
         # whole_of = get_optic_flow(
         #     video=trial_video, 
         #     save_path=None,
@@ -208,7 +211,8 @@ for eid_idx, eid in enumerate(include_eids):
             'ap': spike,
             **whisker_of,
             # **whole_of,
-            **beh
+            **beh,
+            'timestamp': timestamp
         }
         # each key in trial_data add .pyd
         trial_data = {key + '.pyd': value for key, value in trial_data.items()}
