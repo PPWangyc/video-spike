@@ -26,6 +26,7 @@ import torch
 from scipy.ndimage import gaussian_filter1d
 import numpy as np
 from tqdm import tqdm
+import h5py
 
 def main():
     # set config
@@ -91,10 +92,21 @@ def main():
         train_data[eid]["y"].append(test_y)
 
     # save data
-    np.save(f"data/data_rrr_{args.input_mod}.npy", train_data)
-    
-    
-    
+    if args.input_mod == 'whisker-video':
+        # Save using HDF5
+        with h5py.File(f'/expanse/lustre/scratch/ywang74/temp_project/Downloads/data_rrr_{args.input_mod}.h5', 'w') as f:
+            for eid, data in train_data.items():
+                grp = f.create_group(str(eid))
+                grp.create_dataset('X_train', data=data['X'][0], compression='gzip')
+                grp.create_dataset('y_train', data=data['y'][0], compression='gzip')
+                grp.create_dataset('X_test', data=data['X'][1], compression='gzip')
+                grp.create_dataset('y_test', data=data['y'][1], compression='gzip')
+                # Store setup data in the group attributes
+                for key, value in data['setup'].items():
+                    print(key, value)
+                    grp.attrs[key] = value
+    else:
+        np.save(f"data/data_rrr_{args.input_mod}.npy", train_data)
 
 if __name__ == '__main__':
     main()

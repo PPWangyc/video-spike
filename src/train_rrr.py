@@ -71,9 +71,33 @@ def main():
         input_mod = 'pca'
     elif args.input_mod =='ws':
         input_mod = 'ws'
+    elif args.input_mod == 'whisker-video':
+        input_mod = 'whisker-video'
     
     # set dataset
-    train_data = np.load(f'data/data_rrr_{input_mod}.npy', allow_pickle=True).item()
+    if args.input_mod == 'whisker-video':
+        import h5py
+        # /expanse/lustre/scratch/ywang74/temp_project/Downloads
+        with h5py.File(f'/expanse/lustre/scratch/ywang74/temp_project/Downloads/data_rrr_{input_mod}.h5', 'r') as file:
+            # List all groups
+            eids = list(file.keys())
+            train_data = {
+                eid : {
+                    "X" : [file[eid]['X_train'][()], file[eid]['X_test'][()]],
+                    "y" : [file[eid]['y_train'][()], file[eid]['y_test'][()]],
+                    "setup" : {}
+                } for eid in eids
+            }
+            for eid in train_data.keys():
+                n, t, c, h, w = train_data[eid]["X"][0].shape
+                train_data[eid]["X"][0] = train_data[eid]["X"][0].reshape(n, t, -1)
+                n, t, c, h, w = train_data[eid]["X"][1].shape
+                train_data[eid]["X"][1] = train_data[eid]["X"][1].reshape(n, t, -1)
+            #     print(train_data[eid]["X"][0].shape, train_data[eid]["y"][0].shape)
+            #     print(train_data[eid]["X"][1].shape, train_data[eid]["y"][1].shape)
+            # exit()
+    else:
+        train_data = np.load(f'data/data_rrr_{input_mod}.npy', allow_pickle=True).item()
     smooth_w = 2; T = 100
     ground_truth = {}
     eids = train_data.keys()
@@ -85,7 +109,7 @@ def main():
         ground_truth[eid] = train_data[eid]["y"][1]
         for i in range(2):
             train_data[eid]["y"][i] = gaussian_filter1d(train_data[eid]["y"][i], smooth_w, axis=1)
-            if args.input_mod =='cebra' or args.input_mod == 'pca' or args.input_mod == 'ws':
+            if args.input_mod =='cebra' or args.input_mod == 'pca' or args.input_mod == 'ws' or args.input_mod == 'whisker-video':
                 print(train_data[eid]["X"][i].shape)
                 continue
             # one-hot encoding for choice and block
