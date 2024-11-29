@@ -15,7 +15,9 @@ from utils.log_utils import (
     logging
 )
 from utils.loss_utils import (
-    info_nce
+    info_nce,
+    contrast_recon_loss,
+    loss_fn
 )
 from loader.make import (
     make_loader,
@@ -67,9 +69,10 @@ def main():
                                        transform = transform,
     )
     # set model
-    modle_config = ViTMAEConfig(**config.model)
+    # modle_config = ViTMAEConfig(**config.model)
     model_class = NAME2MODEL[config.model.model_class]
-    model = model_class(modle_config)
+    model = model_class(config.model)
+    log.info(f"model: {model}")
 
     # set optimizer
     optimizer = torch.optim.AdamW(
@@ -88,7 +91,7 @@ def main():
     )
 
     # set criterion
-    criterion = info_nce
+    criterion = loss_fn
     # set accelerator
     accelerator = Accelerator()
     model, optimizer, lr_scheduler= accelerator.prepare(
@@ -103,7 +106,7 @@ def main():
         "criterion": criterion,
         "dataset_split_dict": dataset_split_dict,
         "eid": args.eid,
-        "max_steps": 10000,
+        "max_steps": 20000,
         "log": log,
     }
     trainer = make_contrast_trainer(

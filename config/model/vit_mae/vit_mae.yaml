@@ -17,5 +17,7 @@ decoder_num_attention_heads: 16
 decoder_hidden_size: 512
 decoder_num_hidden_layers: 8
 decoder_intermediate_size: 2048
-mask_ratio: 0 # 0 for no masking, usually 0.75 (MAE)
+mask_ratio: 0.75 # 0 for no masking, usually 0.75 (MAE)
 norm_pix_loss: False
+
+embed_size: 768 # projected embedding size, used for contrastive learning

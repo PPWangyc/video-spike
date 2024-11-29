@@ -5,7 +5,7 @@ import numpy as np
 import random
 from model.linear import Linear
 from model.videomae import VideoMAE
-from transformers import ViTMAEConfig, ViTMAEModel
+from model.vit_mae.vit_mae import ContrastViT as ViTMAE
 import matplotlib.pyplot as plt
 from utils.metric_utils import r2_score, bits_per_spike
 from sklearn.metrics import r2_score as r2_score_sklearn
@@ -20,7 +20,7 @@ from sklearn.decomposition import PCA
 NAME2MODEL = {
     "Linear": Linear,
     "VideoMAE": VideoMAE,
-    "ViT_MAE": ViTMAEModel,
+    "ViT_MAE": ViTMAE,
 }
 
 def get_args():

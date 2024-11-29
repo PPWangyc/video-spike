@@ -41,12 +41,12 @@ class ContrastTrainer():
             for batch in self.data_loader:
                 loss = self.step(batch)
                 current_step += 1
-                if current_step >= self.max_steps:
-                    break
                 if best_loss > loss:
                     best_loss = loss
-                    self.log.info(f'Best loss: {best_loss}')
+                    self.log.info(f'Best loss: {best_loss} at step: {current_step}')
                     self.best_model = self.model.state_dict()
+                if current_step >= self.max_steps:
+                    break
         end = time.time()
         self.log.info(f'Training took: {end-start} seconds')
         return best_loss
@@ -78,9 +78,8 @@ class ContrastTrainer():
         }
         
     def _forward(self, image):
-        last_hidden_state = self.model(pixel_values=image).last_hidden_state
-        cls_token = last_hidden_state[:, 0]
-        return cls_token
+        outputs = self.model(image)
+        return outputs
     
     def _unfreeze(self):
         self.log.info('Unfreezing the model')

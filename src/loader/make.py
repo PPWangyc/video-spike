@@ -39,6 +39,8 @@ def make_contrast_loader(dataset_path,eid=None,batch_size=512,shuffle=True,trans
         dataset,
         batch_size=batch_size,
         shuffle=shuffle,
+        pin_memory=True,
+        num_workers=4
     )
 
     return dataloader, neural_data
