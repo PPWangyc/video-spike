@@ -1,6 +1,38 @@
 import os
 import random
 import torch
+import h5py
+import numpy as np
+
+def load_h5_file(file_path, eid=None):
+    """
+    Load an h5 file.
+    """
+    # if eid not a list, convert to list
+    if type(eid) == str:
+        eids = [eid]
+    with h5py.File(file_path, 'r') as file:
+        # List all groups
+        eids = list(file.keys()) if eid is None else eids
+        train_data = {
+            eid : {
+                "X" : [file[eid]['X_train'][()], file[eid]['X_test'][()]],
+                "y" : [file[eid]['y_train'][()], file[eid]['y_test'][()]],
+                "setup" : {}
+            } for eid in eids
+        }
+        for eid in eids:
+            n, t, c, h, w = train_data[eid]["X"][0].shape
+            train_data[eid]["X"][0] = train_data[eid]["X"][0].reshape(n * t, c, h, w)
+            n, t, c, h, w = train_data[eid]["X"][1].shape
+            train_data[eid]["X"][1] = train_data[eid]["X"][1].reshape(n * t, c, h, w)
+            train_data[eid]["X"] = np.concatenate(train_data[eid]["X"], axis=0)
+        return{
+            eid : {
+                "X" : train_data[eid]["X"],
+            } for eid in eids
+        }
+        
 
 def split_dataset(data_dir, eid, train_ratio=0.8, val_ratio=0.1, test_ratio=0.1):
     """
