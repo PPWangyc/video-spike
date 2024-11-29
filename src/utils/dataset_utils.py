@@ -27,9 +27,11 @@ def load_h5_file(file_path, eid=None):
             n, t, c, h, w = train_data[eid]["X"][1].shape
             train_data[eid]["X"][1] = train_data[eid]["X"][1].reshape(n * t, c, h, w)
             train_data[eid]["X"] = np.concatenate(train_data[eid]["X"], axis=0)
+            train_data[eid]["y"] = np.concatenate(train_data[eid]["y"], axis=0)
         return{
             eid : {
                 "X" : train_data[eid]["X"],
+                "y" : train_data[eid]["y"],
             } for eid in eids
         }
         

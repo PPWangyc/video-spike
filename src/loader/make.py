@@ -28,8 +28,9 @@ def make_loader(config, dataset_split_dict):
     return train_dataloader, val_dataloader, test_dataloader
 
 def make_contrast_loader(dataset_path,eid=None,batch_size=512,shuffle=True,transform=None):
-    video = load_h5_file(dataset_path, eid)
-    video = video[eid]['X']
+    data = load_h5_file(dataset_path, eid)
+    video = data[eid]['X']
+    neural_data = data[eid]['y']
     dataset = ContrastDataset(
         video,
         transform=transform
@@ -40,4 +41,4 @@ def make_contrast_loader(dataset_path,eid=None,batch_size=512,shuffle=True,trans
         shuffle=shuffle,
     )
 
-    return dataloader
+    return dataloader, neural_data

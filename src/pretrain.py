@@ -28,8 +28,9 @@ from trainer.make import (
 import torch
 from accelerate import Accelerator
 from torch.optim.lr_scheduler import OneCycleLR
-from transformers import ViTMAEConfig, AutoImageProcessor
+from transformers import ViTMAEConfig
 from torchvision import transforms
+import numpy as np
 
 def main():
     log = logging(header='(੭｡╹▿╹｡)੭', header_color='#df6da9')
@@ -51,10 +52,15 @@ def main():
         transforms.Normalize(mean=[0.485], std=[0.229]) 
     ])
     dataset_split_dict = split_dataset(config.dirs.data_dir,eid=args.eid)
+    train_num = len(dataset_split_dict['train'])
+    test_num = len(dataset_split_dict['test'])
+    train_idx = list(range(train_num))
+    test_idx = list(range(train_num, train_num + test_num))
+
     _, _, test_dataloader = make_loader(config, dataset_split_dict)
     meta_data = get_metadata_from_loader(test_dataloader, config)
     log.info(f"meta_data: {meta_data}")
-    data_loader = make_contrast_loader('/expanse/lustre/scratch/ywang74/temp_project/Downloads/data_rrr_whisker-video.h5',
+    data_loader,_ = make_contrast_loader('/expanse/lustre/scratch/ywang74/temp_project/Downloads/data_rrr_whisker-video.h5',
                                        eid=args.eid,
                                        batch_size=128,
                                        shuffle=True,
@@ -107,5 +113,32 @@ def main():
         **trainer_kwargs
     )
     trainer.fit()
+    data_loader, neural_data = make_contrast_loader('/expanse/lustre/scratch/ywang74/temp_project/Downloads/data_rrr_whisker-video.h5',
+                                       eid=args.eid,
+                                       batch_size=128,
+                                       shuffle=False,
+                                       transform = transform,
+    )
+    embedding = trainer.transform(data_loader)
+    embedding = embedding.reshape((train_num + test_num), 120, -1)
+    train_X = embedding[train_idx]
+    test_X = embedding[test_idx]
+    train_y = neural_data[train_idx]
+    test_y = neural_data[test_idx]
+    train_data = {
+        args.eid:
+        {
+            "X": [], 
+            "y": [], 
+            "setup": {}
+        } 
+    }
+    train_data[args.eid]["X"].append(train_X)
+    train_data[args.eid]["X"].append(test_X)
+    train_data[args.eid]["y"].append(train_y)
+    train_data[args.eid]["y"].append(train_y)
+    print(train_X.shape, train_y.shape)
+    print(test_X.shape, test_y.shape)
+    np.save(f'data_rrr_vit_{args.eid[:5]}', train_data)
 if __name__ == '__main__':
     main()

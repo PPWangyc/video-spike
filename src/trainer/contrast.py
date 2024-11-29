@@ -5,7 +5,7 @@ import os
 from utils.utils import move_batch_to_device, metrics_list, plot_gt_pred, plot_neurons_r2
 from tqdm import tqdm
 from transformers import AutoImageProcessor
-import random
+import time
 def _get_input_modailities(config):
     input_modalities = []
     avail_mod = config.data.modalities.keys()
@@ -32,25 +32,23 @@ class ContrastTrainer():
         self._unfreeze()
 
     def fit(self):
-        import time
+        self.log.info('Starting fitting!')
         current_step = 0
         self.model.train()
         best_loss = np.inf
         start = time.time()
         while current_step < self.max_steps:
             for batch in self.data_loader:
-                end = time.time()
-                print(f'Loading time: {end - start}')
-                start = time.time()
                 loss = self.step(batch)
-                end = time.time()
-                self.log.info(f'Step: {current_step}, Loss: {loss}, Time: {end - start}')
-                start = time.time()
                 current_step += 1
-                if current_step % 100 == 0:
-                    print(f'Step: {current_step}, Loss: {loss}')
-                best_loss = min(best_loss, loss)
-
+                if current_step >= self.max_steps:
+                    break
+                if best_loss > loss:
+                    best_loss = loss
+                    self.log.info(f'Best loss: {best_loss}')
+                    self.best_model = self.model.state_dict()
+        end = time.time()
+        self.log.info(f'Training took: {end-start} seconds')
         return best_loss
 
     def step(self, batch):
@@ -79,7 +77,6 @@ class ContrastTrainer():
             'neg': neg
         }
         
-    
     def _forward(self, image):
         last_hidden_state = self.model(pixel_values=image).last_hidden_state
         cls_token = last_hidden_state[:, 0]
@@ -89,3 +86,16 @@ class ContrastTrainer():
         self.log.info('Unfreezing the model')
         for param in self.model.parameters():
             param.requires_grad = True
+
+    @torch.no_grad()
+    def transform(self, data_loader):
+        # use best model to transform the data
+        self.log.info('Transforming the data')
+        self.model.load_state_dict(self.best_model)
+        features = []
+        for batch in data_loader:
+            batch = move_batch_to_device(batch, self.accelerator.device)
+            embedding = self._forward(batch['ref'])
+            features.append(embedding)
+            print(embedding.shape)
+        return torch.cat(features, dim=0)
