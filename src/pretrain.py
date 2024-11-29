@@ -106,7 +106,7 @@ def main():
         "criterion": criterion,
         "dataset_split_dict": dataset_split_dict,
         "eid": args.eid,
-        "max_steps": 20000,
+        "max_steps": 10000,
         "log": log,
     }
     trainer = make_contrast_trainer(
