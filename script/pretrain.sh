@@ -19,9 +19,11 @@ cd ..
 
 conda activate vs
 eid=$1
+# accelerate launch --config_file config/accelerate/default.yaml src/pretrain.py --model_config config/model/vit_mae/vit_mae.yaml \
+#                     --train_config config/train/vmae_video.yaml \
+#                     --eid $eid
 python src/pretrain.py --model_config config/model/vit_mae/vit_mae.yaml \
                     --train_config config/train/vmae_video.yaml \
                     --eid $eid
-
 cd script
 conda deactivate
