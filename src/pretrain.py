@@ -15,8 +15,6 @@ from utils.log_utils import (
     logging
 )
 from utils.loss_utils import (
-    info_nce,
-    contrast_recon_loss,
     loss_fn
 )
 from loader.make import (
@@ -91,7 +89,9 @@ def main():
     )
 
     # set criterion
-    criterion = loss_fn
+    # temperature is to control the sharpness of the distribution
+    # the smaller the temperature, the sharper the distribution
+    criterion = loss_fn(temperature=0.1)
     # set accelerator
     accelerator = Accelerator()
     # set trainer

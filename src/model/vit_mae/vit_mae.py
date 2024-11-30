@@ -9,7 +9,7 @@ class ContrastViTMAE(nn.Module):
         self.config = ViTMAEConfig(**config)
         self.vit_mae = ViTMAE(self.config)
         self.proj = nn.Linear(self.config.hidden_size, self.config.embed_size)
-        self.temperature = nn.Parameter(torch.tensor(0.1))
+        # self.temperature = nn.Parameter(torch.tensor(0.1))
 
     def forward(self, x):
         cls_token, recon_loss = self.vit_mae(pixel_values=x)
@@ -31,7 +31,7 @@ class ContrastViT(nn.Module):
         self.config.mask_ratio = 0
         self.vit = ViTMAEModel(self.config)
         self.proj = nn.Linear(self.config.hidden_size, self.config.embed_size)
-        self.temperature = nn.Parameter(torch.tensor(0.1))
+        # self.temperature = nn.Parameter(torch.tensor(0.1))
 
     def forward(self, x):
         cls_token = self.vit(pixel_values=x).last_hidden_state[:, 0]
@@ -40,7 +40,7 @@ class ContrastViT(nn.Module):
         z = z / z.norm(dim=-1, keepdim=True)
         return {
             'z': z,
-            'temp': self.temperature
+            # 'temp': self.temperature
         }
 
 class ViTMAE(ViTMAEForPreTraining):

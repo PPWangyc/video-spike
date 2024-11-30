@@ -62,10 +62,13 @@ class ContrastTrainer():
         loss_dict = self.criterion(ref, pos, neg)
         self.accelerator.backward(loss_dict['loss'])
         self.optimizer.step()
+        self.lr_scheduler.step()
         loss_dict = {k: v.item() for k, v in loss_dict.items()}
         return {
-            'cur_step': cur_step,
-            **loss_dict
+            'cur_step': cur_step, # current step
+            **loss_dict, # loss, loss_pos, loss_neg
+            'lr': self.optimizer.param_groups[0]['lr'], # learning rate
+            'temperature': self.criterion.info_nce.temperature # temperature for infoNCE loss
         }
     
     def _inferene(self, batch):
@@ -109,8 +112,8 @@ class ContrastTrainer():
     def _prepare_accelerator(self):
         if self.accelerator is not None:
             self.log.info('Preparing accelerator!')
-            self.data_loader, self.model, self.optimizer = self.accelerator.prepare(
-                self.data_loader, self.model, self.optimizer
+            self.data_loader, self.model, self.optimizer, self.criterion = self.accelerator.prepare(
+                self.data_loader, self.model, self.optimizer, self.criterion
             )
         else:
             self.log.warning('No accelerator provided, using CPU!')
