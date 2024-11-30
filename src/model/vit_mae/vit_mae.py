@@ -2,6 +2,7 @@ from transformers import ViTMAEConfig, ViTMAEModel, ViTMAEForPreTraining
 import torch.nn as nn
 import torch
 import wandb
+import numpy as np
 
 class ContrastViTMAE(nn.Module):
     def __init__(self, config):
@@ -31,7 +32,7 @@ class ContrastViT(nn.Module):
         self.config.mask_ratio = 0
         self.vit = ViTMAEModel(self.config)
         self.proj = nn.Linear(self.config.hidden_size, self.config.embed_size)
-        # self.temperature = nn.Parameter(torch.tensor(0.1))
+        self.temperature = nn.Parameter(torch.ones([]) * np.log(1 / 0.07))
 
     def forward(self, x):
         cls_token = self.vit(pixel_values=x).last_hidden_state[:, 0]
@@ -40,7 +41,7 @@ class ContrastViT(nn.Module):
         z = z / z.norm(dim=-1, keepdim=True)
         return {
             'z': z,
-            # 'temp': self.temperature
+            'temp': 1/self.temperature.exp()
         }
 
 class ViTMAE(ViTMAEForPreTraining):

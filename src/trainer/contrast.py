@@ -68,7 +68,8 @@ class ContrastTrainer():
             'cur_step': cur_step, # current step
             **loss_dict, # loss, loss_pos, loss_neg
             'lr': self.optimizer.param_groups[0]['lr'], # learning rate
-            'temperature': self.criterion.info_nce.temperature # temperature for infoNCE loss
+            # 'temperature': self.criterion.info_nce.temperature # temperature for infoNCE loss
+            'temperature': ref['temp']
         }
     
     def _inferene(self, batch):
@@ -97,7 +98,7 @@ class ContrastTrainer():
     def transform(self, data_loader):
         # use best model to transform the data
         self.log.info('Transforming the data')
-        self.model.load_state_dict(self.best_model)
+        # self.model.load_state_dict(self.best_model)
         data_loader, self.model = self.accelerator.prepare(data_loader, self.model)
         features = []
         for batch in tqdm(data_loader):

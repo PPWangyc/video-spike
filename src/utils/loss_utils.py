@@ -1,6 +1,6 @@
 from torch import einsum, logsumexp, no_grad
 
-def loss_fn(ref, pos, neg):
+def loss_fn_(ref, pos, neg):
     if 'recon_loss' in ref:
         return contrast_recon_loss(ref, pos, neg)
     else:
@@ -114,15 +114,16 @@ def infonce(
         - The behavior of this function changed beginning in CEBRA 0.3.0.
         The InfoNCE implementation is numerically stabilized.
     """
-    with torch.no_grad():
-        c, _ = neg_dist.max(dim=1, keepdim=True)
-    c = c.detach()
-
-    pos_dist = pos_dist - c.squeeze(1)
-    neg_dist = neg_dist - c
+    # with torch.no_grad():
+    #     c, _ = neg_dist.max(dim=1, keepdim=True)
+    # c = c.detach()
+    # print(c.shape)
+    # pos_dist = pos_dist - c.squeeze(1)
+    # neg_dist = neg_dist - c
     align = (-pos_dist).mean()
+    # print(align)
     uniform = torch.logsumexp(neg_dist, dim=1).mean()
-
+    return align + uniform, align, uniform
     c_mean = c.mean()
     align_corrected = align - c_mean
     uniform_corrected = uniform + c_mean
@@ -390,11 +391,13 @@ def info_nce(ref, pos, neg, tau=1.0):
     pos_dist = einsum("nd,nd->n", ref, pos) / tau
     neg_dist = einsum("nd,md->nm", ref, neg) / tau
     
-    with no_grad():
-        c, _ = neg_dist.max(dim=1, keepdim=True)
-    c = c.detach()
-    pos_dist = pos_dist - c.squeeze(1)
-    neg_dist = neg_dist - c
+    # # stabilize the computation
+    # with no_grad():
+    #     # c, _ = neg_dist.max(dim=1, keepdim=True)
+    #     c = torch.max(pos_dist, neg_dist.max(dim=1)[0]).unsqueeze(1)
+    # c = c.detach()
+    # pos_dist = pos_dist - c.squeeze(1)
+    # neg_dist = neg_dist - c
 
     # Compute the losses
     pos_loss = -pos_dist.mean()

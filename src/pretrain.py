@@ -15,7 +15,8 @@ from utils.log_utils import (
     logging
 )
 from utils.loss_utils import (
-    loss_fn
+    loss_fn,
+    loss_fn_
 )
 from loader.make import (
     make_loader,
@@ -80,9 +81,10 @@ def main():
         eps=config.optimizer.eps
     )
     # set scheduler
+    max_steps = 10000
     lr_scheduler = OneCycleLR(
         optimizer=optimizer,
-        total_steps=len(dataset_split_dict['train']) // config.training.train_batch_size * config.training.num_epochs,
+        total_steps=max_steps,
         max_lr=config.optimizer.lr,
         pct_start=config.optimizer.warmup_pct,
         div_factor=config.optimizer.div_factor,
@@ -91,7 +93,8 @@ def main():
     # set criterion
     # temperature is to control the sharpness of the distribution
     # the smaller the temperature, the sharper the distribution
-    criterion = loss_fn(temperature=0.1)
+    # criterion = loss_fn(temperature=0.1)
+    criterion = loss_fn_
     # set accelerator
     accelerator = Accelerator()
     # set trainer
@@ -103,7 +106,7 @@ def main():
         "criterion": criterion,
         "dataset_split_dict": dataset_split_dict,
         "eid": args.eid,
-        "max_steps": 10000,
+        "max_steps": max_steps,
         "log": log,
         "use_wandb": config.wandb.use,
     }
