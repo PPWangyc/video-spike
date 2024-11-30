@@ -33,6 +33,7 @@ from torch.optim.lr_scheduler import OneCycleLR
 from transformers import ViTMAEConfig
 from torchvision import transforms
 import numpy as np
+import cebra
 
 def main():
     log = logging(header='(੭｡╹▿╹｡)੭', header_color='#df6da9')
@@ -72,7 +73,6 @@ def main():
     # modle_config = ViTMAEConfig(**config.model)
     model_class = NAME2MODEL[config.model.model_class]
     model = model_class(config.model)
-    log.info(f"model: {model}")
 
     # set optimizer
     optimizer = torch.optim.AdamW(
@@ -94,9 +94,6 @@ def main():
     criterion = loss_fn
     # set accelerator
     accelerator = Accelerator()
-    model, optimizer, lr_scheduler= accelerator.prepare(
-        model, optimizer, lr_scheduler
-    )
     # set trainer
     trainer_kwargs = {
         "log_dir": config.dirs.log_dir,
@@ -108,6 +105,7 @@ def main():
         "eid": args.eid,
         "max_steps": 10000,
         "log": log,
+        "use_wandb": config.wandb.use,
     }
     trainer = make_contrast_trainer(
         model=model,
@@ -122,8 +120,11 @@ def main():
                                        shuffle=False,
                                        transform = transform,
     )
-    embedding = trainer.transform(data_loader)
+    embedding = trainer.transform(data_loader).cpu().numpy()
     embedding = embedding.reshape((train_num + test_num), 120, -1)
+    ax = cebra.plot_embedding(embedding)
+    fig = ax.get_figure()
+    fig.savefig(f'vit_{args.eid[:5]}_embed.png')
     train_X = embedding[train_idx]
     test_X = embedding[test_idx]
     train_y = neural_data[train_idx]
@@ -142,6 +143,6 @@ def main():
     train_data[args.eid]["y"].append(train_y)
     print(train_X.shape, train_y.shape)
     print(test_X.shape, test_y.shape)
-    np.save(f'data_rrr_vit_{args.eid[:5]}', train_data)
+    np.save(f'data/data_rrr_vit_{args.eid[:5]}', train_data)
 if __name__ == '__main__':
     main()

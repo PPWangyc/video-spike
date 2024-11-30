@@ -12,7 +12,7 @@ def contrast_recon_loss(ref, pos, neg):
     neg_z, neg_recon_loss, neg_temp = neg['z'], neg['recon_loss'], neg['temp']
 
     info_nce_loss = info_nce(ref_z, pos_z, neg_z, ref_temp)
-    loss = ref_recon_loss + info_nce_loss
+    loss = ref_recon_loss + info_nce_loss['loss']
     return loss
 
 def info_nce(ref, pos, neg, tau=1.0):
@@ -29,6 +29,10 @@ def info_nce(ref, pos, neg, tau=1.0):
     # Compute the losses
     pos_loss = -pos_dist.mean()
     neg_loss = logsumexp(neg_dist, dim=1).mean()
-    print("pos_loss: ", pos_loss, "neg_loss: ", neg_loss)
+    loss = pos_loss + neg_loss
     # Total loss is the sum of positive and negative losses
-    return pos_loss + neg_loss
+    return {
+        'loss': loss,
+        'pos_loss': pos_loss,
+        'neg_loss': neg_loss
+    }

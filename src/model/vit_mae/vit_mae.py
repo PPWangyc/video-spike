@@ -1,7 +1,7 @@
 from transformers import ViTMAEConfig, ViTMAEModel, ViTMAEForPreTraining
 import torch.nn as nn
 import torch
-from utils.loss_utils import info_nce
+import wandb
 
 class ContrastViTMAE(nn.Module):
     def __init__(self, config):
@@ -38,7 +38,6 @@ class ContrastViT(nn.Module):
         z = self.proj(cls_token)
         # normalize projection
         z = z / z.norm(dim=-1, keepdim=True)
-        print(self.temperature)
         return {
             'z': z,
             'temp': self.temperature
