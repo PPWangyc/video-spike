@@ -32,7 +32,7 @@ class ContrastViT(nn.Module):
         self.config.mask_ratio = 0
         self.vit = ViTMAEModel(self.config)
         self.proj = nn.Linear(self.config.hidden_size, self.config.embed_size)
-        self.temperature = nn.Parameter(torch.ones([]) * np.log(1 / 0.07))
+        self.temperature = nn.Parameter(torch.ones([]) * np.log(1))
 
     def forward(self, x):
         cls_token = self.vit(pixel_values=x).last_hidden_state[:, 0]
