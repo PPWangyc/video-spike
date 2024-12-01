@@ -1,9 +1,15 @@
 import numpy as np
 import os
+import argparse
+
+parser = argparse.ArgumentParser()
+
+parser.add_argument('--label', type=str, default='cebra', help='label for the data')
+
+args = parser.parse_args()
 
 data_dir = 'data'
-use_pca = False
-label = 'cebra' if not use_pca else 'pca'
+label = args.label
 # get all files that start with data_rrr_cebra
 files = [f for f in os.listdir(data_dir) if f.startswith(f'data_rrr_{label}')]
 print(files)

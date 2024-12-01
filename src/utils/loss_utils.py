@@ -391,13 +391,13 @@ def info_nce(ref, pos, neg, tau=1.0):
     pos_dist = einsum("nd,nd->n", ref, pos) / tau
     neg_dist = einsum("nd,md->nm", ref, neg) / tau
     
-    # # stabilize the computation
-    # with no_grad():
-    #     # c, _ = neg_dist.max(dim=1, keepdim=True)
-    #     c = torch.max(pos_dist, neg_dist.max(dim=1)[0]).unsqueeze(1)
-    # c = c.detach()
-    # pos_dist = pos_dist - c.squeeze(1)
-    # neg_dist = neg_dist - c
+    # stabilize the computation
+    with no_grad():
+        c, _ = neg_dist.max(dim=1, keepdim=True)
+        # c = torch.max(pos_dist, neg_dist.max(dim=1)[0]).unsqueeze(1)
+    c = c.detach()
+    pos_dist = pos_dist - c.squeeze(1)
+    neg_dist = neg_dist - c
 
     # Compute the losses
     pos_loss = -pos_dist.mean()

@@ -143,7 +143,7 @@ def main():
     train_data[args.eid]["X"].append(train_X)
     train_data[args.eid]["X"].append(test_X)
     train_data[args.eid]["y"].append(train_y)
-    train_data[args.eid]["y"].append(train_y)
+    train_data[args.eid]["y"].append(test_y)
     print(train_X.shape, train_y.shape)
     print(test_X.shape, test_y.shape)
     np.save(f'data/data_rrr_vit_{args.eid[:5]}', train_data)

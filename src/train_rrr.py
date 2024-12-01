@@ -73,7 +73,8 @@ def main():
         input_mod = 'ws'
     elif args.input_mod == 'whisker-video':
         input_mod = 'whisker-video'
-    
+    elif args.input_mod == 'vit':
+        input_mod = 'vit'
     # set dataset
     if args.input_mod == 'whisker-video':
         import h5py
@@ -109,8 +110,12 @@ def main():
         ground_truth[eid] = train_data[eid]["y"][1]
         for i in range(2):
             train_data[eid]["y"][i] = gaussian_filter1d(train_data[eid]["y"][i], smooth_w, axis=1)
-            if args.input_mod =='cebra' or args.input_mod == 'pca' or args.input_mod == 'ws' or args.input_mod == 'whisker-video':
-                print(train_data[eid]["X"][i].shape)
+            if args.input_mod in ['cebra', 'pca', 'ws', 'whisker-video','vit']:
+                # select_idx = np.linspace(0, 119, T, dtype=int)
+                # if args.input_mod == 'vit':
+                #     train_data[eid]["X"][i] = train_data[eid]["X"][i][:,select_idx]
+            # if args.input_mod =='cebra' or args.input_mod == 'pca' or args.input_mod == 'ws' or args.input_mod == 'whisker-video':
+                print(train_data[eid]["X"][i].shape, train_data[eid]["y"][i].shape)
                 continue
             # one-hot encoding for choice and block
             if args.input_mod != 'me' and args.input_mod != 'of-2d':
@@ -139,7 +144,6 @@ def main():
             
             if len(train_data[eid]["X"][i].shape) ==2:
                 train_data[eid]["X"][i] = torch.tensor(train_data[eid]["X"][i]).unsqueeze(2).numpy()
-            print(train_data[eid]["X"][i].shape, train_data[eid]["y"][i].shape)
             # add bias term
             train_data[eid]["X"][i] = np.concatenate(
                 [
@@ -151,6 +155,7 @@ def main():
             train_data[eid]["X"][i] = train_data[eid]["X"][i][:,sorted_idx]
         
             train_data[eid]["y"][i] = (train_data[eid]["y"][i]-mean_y)/std_y
+            print(train_data[eid]["X"][i].shape, train_data[eid]["y"][i].shape)
 
         train_data[eid]["setup"]["mean_X_Tv"] = mean_X
         train_data[eid]["setup"]["std_X_Tv"] = std_X
