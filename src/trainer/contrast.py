@@ -100,6 +100,8 @@ class ContrastTrainer():
         self.log.info('Transforming the data')
         # self.model.load_state_dict(self.best_model)
         data_loader, self.model = self.accelerator.prepare(data_loader, self.model)
+        # set model mask ratio to 0
+        self.model.config.mask_ratio = 0
         features = []
         for batch in tqdm(data_loader):
             outputs = self._forward(batch['ref'])
