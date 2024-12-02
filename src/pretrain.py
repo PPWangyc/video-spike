@@ -51,7 +51,7 @@ def main():
         # transforms.Resize((224, 224)),  # Resize to the input size expected by the model
         transforms.Resize((144, 144)),
         # transforms.Normalize(mean=[0.485, 0.456, 0.406], std=[0.229, 0.224, 0.225])  # ImageNet norms
-        transforms.Normalize(mean=[0.485], std=[0.229]) 
+        transforms.Normalize(mean=[0.5], std=[0.5]) # gray scale
     ])
     dataset_split_dict = split_dataset(config.dirs.data_dir,eid=args.eid)
     train_num = len(dataset_split_dict['train'])

@@ -15,7 +15,7 @@ class ContrastDataset(Dataset):
             time_offset=None, # by second
             transform=None
             ):
-        self.video = torch.tensor(video)
+        self.video = torch.tensor(video) / 255.0 # Normalize the video
         self.timestamp = timestamp
         if timestamp is None:
             self.timestamp = np.linspace(0, len(video)-1, len(video))
@@ -35,6 +35,10 @@ class ContrastDataset(Dataset):
             ref_frame = self.transform(ref_frame)
             pos_frame = self.transform(pos_frame)
             neg_frame = self.transform(neg_frame)
+        # torch vision save the image as (C, H, W) format
+        # import torchvision
+        # # save ref_frame
+        # torchvision.utils.save_image(ref_frame, f"ref_frame_{idx}.png")
         return {
             "ref": ref_frame,
             "pos": pos_frame,

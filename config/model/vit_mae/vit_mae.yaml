@@ -20,4 +20,4 @@ decoder_intermediate_size: 2048
 mask_ratio: 0.75 # 0 for no masking, usually 0.75 (MAE)
 norm_pix_loss: False
 
-embed_size: 768 # projected embedding size, used for contrastive learning
+embed_size: 3 # projected embedding size, used for contrastive learning
