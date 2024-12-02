@@ -8,12 +8,19 @@ def loss_fn_(ref, pos, neg):
 
 def contrast_recon_loss(ref, pos, neg):
     ref_z, ref_recon_loss, ref_temp = ref['z'], ref['recon_loss'], ref['temp']
-    pos_z, pos_recon_loss, pos_temp = pos['z'], pos['recon_loss'], pos['temp']
-    neg_z, neg_recon_loss, neg_temp = neg['z'], neg['recon_loss'], neg['temp']
+    pos_z, pos_recon_loss, _ = pos['z'], pos['recon_loss'], pos['temp']
+    neg_z, neg_recon_loss, _ = neg['z'], neg['recon_loss'], neg['temp']
 
     info_nce_loss = info_nce(ref_z, pos_z, neg_z, ref_temp)
-    loss = ref_recon_loss + info_nce_loss['loss']
-    return loss
+    mean_recon_loss = (ref_recon_loss + pos_recon_loss + neg_recon_loss) / 3
+    loss = mean_recon_loss + info_nce_loss['loss']
+    return {
+        'loss': loss,
+        'recon_loss': mean_recon_loss,
+        'pos_loss': info_nce_loss['pos_loss'],
+        'neg_loss': info_nce_loss['neg_loss'],
+        'contrast_loss': info_nce_loss['loss']
+    }
 
 #
 # CEBRA: Consistent EmBeddings of high-dimensional Recordings using Auxiliary variables

@@ -5,7 +5,10 @@ import numpy as np
 import random
 from model.linear import Linear
 from model.videomae import VideoMAE
-from model.vit_mae.vit_mae import ContrastViT as ViTMAE
+from model.vit_mae.vit_mae import (
+    ContrastViT,
+    ContrastViTMAE
+)
 import matplotlib.pyplot as plt
 from utils.metric_utils import r2_score, bits_per_spike
 from sklearn.metrics import r2_score as r2_score_sklearn
@@ -20,7 +23,8 @@ from sklearn.decomposition import PCA
 NAME2MODEL = {
     "Linear": Linear,
     "VideoMAE": VideoMAE,
-    "ViT_MAE": ViTMAE,
+    "ContrastViT": ContrastViT,
+    "ContrastViTMAE": ContrastViTMAE
 }
 
 def get_args():
@@ -31,6 +35,7 @@ def get_args():
     parser.add_argument('--log_dir', type=str, default='logs', help='Log directory')
     parser.add_argument('--eid', type=str, default='d57df551-6dcb-4242-9c72-b806cff5613a')
     parser.add_argument('--input_mod', type=str, default='whisker-motion-energy', help='Input modality')
+    parser.add_argument('--model', type=str, default='cm', help='Model name')
     args = parser.parse_args()
     return args
 

@@ -69,8 +69,12 @@ def main():
                                        transform = transform,
     )
     # set model
-    # modle_config = ViTMAEConfig(**config.model)
-    model_class = NAME2MODEL[config.model.model_class]
+    model_name = args.model
+    if model_name == 'c':
+        model_name = 'ContrastViT'
+    elif model_name == 'cm':
+        model_name = 'ContrastViTMAE'
+    model_class = NAME2MODEL[model_name]
     model = model_class(config.model)
 
     # set optimizer
@@ -81,7 +85,7 @@ def main():
         eps=config.optimizer.eps
     )
     # set scheduler
-    max_steps = 10000
+    max_steps = 20000
     lr_scheduler = OneCycleLR(
         optimizer=optimizer,
         total_steps=max_steps,
@@ -119,7 +123,7 @@ def main():
     trainer.fit()
     data_loader, neural_data = make_contrast_loader('/expanse/lustre/scratch/ywang74/temp_project/Downloads/data_rrr_whisker-video.h5',
                                        eid=args.eid,
-                                       batch_size=128,
+                                       batch_size=256,
                                        shuffle=False,
                                        transform = transform,
     )
