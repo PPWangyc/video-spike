@@ -39,10 +39,11 @@ class ContrastTrainer():
         while current_step < self.max_steps:
             for batch in self.data_loader:
                 step_logs = self._step(batch, current_step)
-                wandb.log(step_logs) if self.use_wandb else self.log.info('{}'.format(step_logs))
+                if self.accelerator.is_main_process:
+                    wandb.log(step_logs) if self.use_wandb else self.log.info('{}'.format(step_logs))
                 loss = step_logs['loss']
                 current_step += 1
-                if best_loss > loss:
+                if best_loss > loss and self.accelerator.is_main_process:
                     best_loss = loss
                     self.log.info(f'Best loss: {best_loss} at step: {current_step}')
                     self.best_model = self.model.state_dict()
@@ -55,7 +56,7 @@ class ContrastTrainer():
     def _step(self, batch, cur_step):
         self.model.train()
         self.optimizer.zero_grad()
-        outputs = self._inferene(batch)
+        outputs = self._inference(batch)
         ref = outputs['ref']
         pos = outputs['pos']
         neg = outputs['neg']
@@ -72,7 +73,7 @@ class ContrastTrainer():
             'temperature': ref['temp']
         }
     
-    def _inferene(self, batch):
+    def _inference(self, batch):
         ref = batch['ref']
         pos = batch['pos']
         neg = batch['neg']
@@ -126,7 +127,7 @@ class ContrastTrainer():
         eid = kwargs.get('eid', None)
         model_name = self.model.__class__.__name__
         self.use_wandb = kwargs.get('use_wandb', False)
-        if self.use_wandb:
+        if self.use_wandb and self.accelerator.is_main_process:
             wandb.init(project='video-ssl', 
                        name="{}_{}".format(eid[:5], model_name),
             )

@@ -28,9 +28,11 @@ from trainer.make import (
 )
 import torch
 from accelerate import Accelerator
+from accelerate.utils import DistributedDataParallelKwargs
 from torch.optim.lr_scheduler import OneCycleLR
 from transformers import ViTMAEConfig
 from torchvision import transforms
+from torch_optimizer import Lamb
 import numpy as np
 import cebra
 
@@ -45,6 +47,15 @@ def main():
     config = update_config(args, config)
     # set seed
     set_seed(config.seed)
+    # set accelerator
+    kwargs = DistributedDataParallelKwargs(find_unused_parameters=True)
+    accelerator = Accelerator(kwargs_handlers=[kwargs])
+    # log accelerator info
+    local_rank = accelerator.state.local_process_index # rank of the process
+    world_size = accelerator.state.num_processes # number of processes
+    dsitributed = not accelerator.state.distributed_type.value == 'NO'
+    log.info(f"Distributed: {dsitributed}, Local Rank: {local_rank}, World Size: {world_size}, Device: {accelerator.device}")
+
     # set dataset
     transform = transforms.Compose([
         # transforms.ToTensor(),  # Convert image to tensor
@@ -59,9 +70,9 @@ def main():
     train_idx = list(range(train_num))
     test_idx = list(range(train_num, train_num + test_num))
 
-    _, _, test_dataloader = make_loader(config, dataset_split_dict)
-    meta_data = get_metadata_from_loader(test_dataloader, config)
-    log.info(f"meta_data: {meta_data}")
+    # _, _, test_dataloader = make_loader(config, dataset_split_dict,accelerator)
+    # meta_data = get_metadata_from_loader(test_dataloader, config)
+    # log.info(f"meta_data: {meta_data}")
     data_loader,_ = make_contrast_loader('/expanse/lustre/scratch/ywang74/temp_project/Downloads/data_rrr_whisker-video.h5',
                                        eid=args.eid,
                                        batch_size=128,
@@ -84,6 +95,13 @@ def main():
         weight_decay=config.optimizer.wd,
         eps=config.optimizer.eps
     )
+    if world_size > 1:
+        optimizer = Lamb(
+            model.parameters(), 
+            lr=config.optimizer.lr, 
+            weight_decay=config.optimizer.wd,
+            eps=config.optimizer.eps
+        )
     # set scheduler
     max_steps = 20000
     lr_scheduler = OneCycleLR(
@@ -99,8 +117,6 @@ def main():
     # the smaller the temperature, the sharper the distribution
     # criterion = loss_fn(temperature=0.1)
     criterion = loss_fn_
-    # set accelerator
-    accelerator = Accelerator()
     # set trainer
     trainer_kwargs = {
         "log_dir": config.dirs.log_dir,

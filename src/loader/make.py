@@ -4,25 +4,28 @@ from loader.base import BaseDataset
 from loader.contrast import ContrastDataset
 from utils.dataset_utils import load_h5_file
 
-def make_loader(config, dataset_split_dict):
+def make_loader(config, dataset_split_dict, accelerator=None):
     train_dataset = BaseDataset(
         config, 
         dataset_split_dict,
-        mode='train'
+        mode='train',
+        accelerator=accelerator
     )
     train_dataloader = train_dataset.get_dataloader()
 
     val_dataset = BaseDataset(
         config, 
         dataset_split_dict,
-        mode='val'
+        mode='val',
+        accelerator=accelerator
     )
     val_dataloader = val_dataset.get_dataloader()
 
     test_dataset = BaseDataset(
         config, 
         dataset_split_dict,
-        mode='test'
+        mode='test',
+        accelerator=accelerator
     )
     test_dataloader = test_dataset.get_dataloader()
     return train_dataloader, val_dataloader, test_dataloader

@@ -2,6 +2,7 @@ import torch
 from torch.utils.data import Dataset
 from torch.utils.data import DataLoader
 import webdataset as wds
+import webdataset.filters as filters
 import numpy as np
 import torchvision.transforms as transforms
 from torchvision.io import write_video
@@ -12,14 +13,16 @@ class BaseDataset():
             self, 
             config,
             data, 
+            accelerator=None,
             mode='train',
             ):
         self.config = config
         self.mode = mode
-        dataset = wds.WebDataset(data[mode],seed=config.seed)
+        dataset = wds.WebDataset(data[mode],seed=config.seed, shardshuffle=True)
         if mode == 'train':
             dataset = dataset.shuffle(10000, rng=random.Random(config.seed))
         self.dataset = dataset.decode(wds.autodecode.torch_video, "torchrgb").map(self.preprocess_sample)
+        
         self.video_transform = transforms.Compose([
             transforms.Resize((config.data.modalities.video.height, config.data.modalities.video.width))
             ])
