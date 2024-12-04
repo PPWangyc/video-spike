@@ -75,6 +75,8 @@ def main():
         input_mod = 'whisker-video'
     elif args.input_mod == 'vit':
         input_mod = 'vit'
+    elif args.input_mod == 'cm':
+        input_mod = 'cm'
     # set dataset
     if args.input_mod == 'whisker-video':
         import h5py
@@ -110,7 +112,7 @@ def main():
         ground_truth[eid] = train_data[eid]["y"][1]
         for i in range(2):
             train_data[eid]["y"][i] = gaussian_filter1d(train_data[eid]["y"][i], smooth_w, axis=1)
-            if args.input_mod in ['cebra', 'pca', 'ws', 'whisker-video','vit']:
+            if args.input_mod in ['cebra', 'pca', 'ws', 'whisker-video','vit','cm']:
                 # select_idx = np.linspace(0, 119, T, dtype=int)
                 # if args.input_mod == 'vit':
                 #     train_data[eid]["X"][i] = train_data[eid]["X"][i][:,select_idx]
