@@ -70,9 +70,6 @@ def main():
     train_idx = list(range(train_num))
     test_idx = list(range(train_num, train_num + test_num))
 
-    # _, _, test_dataloader = make_loader(config, dataset_split_dict,accelerator)
-    # meta_data = get_metadata_from_loader(test_dataloader, config)
-    # log.info(f"meta_data: {meta_data}")
     data_loader,_ = make_contrast_loader('/expanse/lustre/scratch/ywang74/temp_project/Downloads/data_rrr_whisker-video.h5',
                                        eid=args.eid,
                                        batch_size=128,
@@ -95,21 +92,19 @@ def main():
         weight_decay=config.optimizer.wd,
         eps=config.optimizer.eps
     )
-    if world_size > 1:
-        optimizer = Lamb(
-            model.parameters(), 
-            lr=config.optimizer.lr, 
-            weight_decay=config.optimizer.wd,
-            eps=config.optimizer.eps
-        )
+
     # set scheduler
     max_steps = 20000
+    global_batch_size = config.train.batch_size * world_size
+    max_lr = config.optimizer.lr * global_batch_size
+    max_steps = max_steps // world_size
+    num_epochs = max_steps // len(data_loader)
     lr_scheduler = OneCycleLR(
         optimizer=optimizer,
         total_steps=max_steps,
-        max_lr=config.optimizer.lr,
-        pct_start=config.optimizer.warmup_pct,
-        div_factor=config.optimizer.div_factor,
+        max_lr=max_lr,
+        pct_start=2 / num_epochs,
+        final_div_factor=1000,
     )
 
     # set criterion
