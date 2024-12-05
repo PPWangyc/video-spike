@@ -115,9 +115,10 @@ class ContrastTrainer():
                 embedding = outputs['z']
             else:
                 self.log.error('No embedding found in the model!')
-            embedding = self.accelerator.gather(embedding) 
             features.append(embedding)
-        return torch.cat(features, dim=0)
+        features = torch.cat(features, dim=0)
+        features = self.accelerator.gather(features)
+        return features
     
     def _prepare_accelerator(self):
         if self.accelerator is not None:

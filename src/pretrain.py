@@ -140,28 +140,29 @@ def main():
                                        transform = transform,
     )
     embedding = trainer.transform(data_loader).cpu().numpy()
-    embedding = embedding.reshape((train_num + test_num), 120, -1)
-    ax = cebra.plot_embedding(embedding)
-    fig = ax.get_figure()
-    fig.savefig(f'vit_{args.eid[:5]}_embed.png')
-    train_X = embedding[train_idx]
-    test_X = embedding[test_idx]
-    train_y = neural_data[train_idx]
-    test_y = neural_data[test_idx]
-    train_data = {
-        args.eid:
-        {
-            "X": [], 
-            "y": [], 
-            "setup": {}
-        } 
-    }
-    train_data[args.eid]["X"].append(train_X)
-    train_data[args.eid]["X"].append(test_X)
-    train_data[args.eid]["y"].append(train_y)
-    train_data[args.eid]["y"].append(test_y)
-    print(train_X.shape, train_y.shape)
-    print(test_X.shape, test_y.shape)
-    np.save(f'data/data_rrr_{args.model}_{args.eid[:5]}', train_data)
+    if accelerator.is_main_process:
+        embedding = embedding.reshape((train_num + test_num), 120, -1)
+        ax = cebra.plot_embedding(embedding)
+        fig = ax.get_figure()
+        fig.savefig(f'vit_{args.eid[:5]}_embed.png')
+        train_X = embedding[train_idx]
+        test_X = embedding[test_idx]
+        train_y = neural_data[train_idx]
+        test_y = neural_data[test_idx]
+        train_data = {
+            args.eid:
+            {
+                "X": [], 
+                "y": [], 
+                "setup": {}
+            } 
+        }
+        train_data[args.eid]["X"].append(train_X)
+        train_data[args.eid]["X"].append(test_X)
+        train_data[args.eid]["y"].append(train_y)
+        train_data[args.eid]["y"].append(test_y)
+        print(train_X.shape, train_y.shape)
+        print(test_X.shape, test_y.shape)
+        np.save(f'data/data_rrr_{args.model}_{args.eid[:5]}', train_data)
 if __name__ == '__main__':
     main()
