@@ -9,7 +9,7 @@
 #SBATCH -c 8
 #SBATCH --ntasks-per-node=1
 #SBATCH --mem 150000
-#SBATCH --gpus=4
+#SBATCH --gpus=3
 #SBATCH -t 0-10:00
 #SBATCH --export=ALL
 
