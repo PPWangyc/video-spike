@@ -82,6 +82,8 @@ def main():
         model_name = 'ContrastViT'
     elif model_name == 'cm':
         model_name = 'ContrastViTMAE'
+    elif model_name == 'm':
+        model_name='MAE'
     model_class = NAME2MODEL[model_name]
     model = model_class(config.model)
 

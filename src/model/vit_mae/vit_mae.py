@@ -43,6 +43,21 @@ class ContrastViT(nn.Module):
             'z': z,
             'temp': 1/self.temperature.exp()
         }
+class MAE(nn.Module):
+    def __init__(self, config):
+        super().__init__()
+        self.config = ViTMAEConfig(**config)
+        self.vit_mae = ViTMAE(self.config)
+        
+    def forward(self, x):
+        cls_token, recon_loss = self.vit_mae(pixel_values=x)
+        # normalize projection
+        z = cls_token/cls_token.norm(dim=-1, keepdim=True)
+        return {
+            'z': z,
+            'recon_loss': recon_loss
+        }
+
 
 class ViTMAE(ViTMAEForPreTraining):
     def forward(

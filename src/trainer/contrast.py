@@ -70,7 +70,7 @@ class ContrastTrainer():
             **loss_dict, # loss, loss_pos, loss_neg
             'lr': self.optimizer.param_groups[0]['lr'], # learning rate
             # 'temperature': self.criterion.info_nce.temperature # temperature for infoNCE loss
-            'temperature': ref['temp']
+            'temperature': ref['temp'] if 'temp' in ref else 0
         }
     
     def _inference(self, batch):

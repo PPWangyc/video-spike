@@ -1,17 +1,25 @@
 from torch import einsum, logsumexp, no_grad
 
-def loss_fn_(ref, pos, neg):
-    if 'recon_loss' in ref:
-        return contrast_recon_loss(ref, pos, neg)
+def loss_fn_(ref, pos, neg, fix_temp=True):
+    if 'recon_loss' in ref and 'temp' in ref:
+        return contrast_recon_loss(ref, pos, neg,fix_temp)
+    elif 'z' in ref and 'temp' in ref:
+        if fix_temp:
+            return info_nce(ref['z'], pos['z'], neg['z'])
+        else:
+            return info_nce(ref['z'], pos['z'], neg['z'], ref['temp'])
+    elif 'z' in ref and 'recon_loss' in ref:
+        return {
+            'loss': (ref['recon_loss'] + pos['recon_loss'] + neg['recon_loss'])/3
+        }
     else:
-        return info_nce(ref['z'], pos['z'], neg['z'], ref['temp'])
-
-def contrast_recon_loss(ref, pos, neg):
+        raise ValueError('Invalid Loss input')
+def contrast_recon_loss(ref, pos, neg,fix_temp=True):
     ref_z, ref_recon_loss, ref_temp = ref['z'], ref['recon_loss'], ref['temp']
     pos_z, pos_recon_loss, _ = pos['z'], pos['recon_loss'], pos['temp']
     neg_z, neg_recon_loss, _ = neg['z'], neg['recon_loss'], neg['temp']
-
-    info_nce_loss = info_nce(ref_z, pos_z, neg_z, ref_temp)
+    _temp = 1.0 if fix_temp else ref_temp
+    info_nce_loss = info_nce(ref_z, pos_z, neg_z, _temp)
     mean_recon_loss = (ref_recon_loss + pos_recon_loss + neg_recon_loss) / 3
     loss = mean_recon_loss + info_nce_loss['loss']
     return {

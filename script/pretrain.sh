@@ -22,6 +22,7 @@ eid=$1
 model=$2 # c, m, cm; contrast, mask, contrast_mask
 accelerate launch --config_file config/accelerate/default.yaml src/pretrain.py --model_config config/model/vit_mae/vit_mae.yaml \
                     --train_config config/train/vmae_video.yaml \
+                    --model $model \
                     --eid $eid
 # python src/pretrain.py --model_config config/model/vit_mae/vit_mae.yaml \
 #                     --train_config config/train/vmae_video.yaml \

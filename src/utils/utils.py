@@ -7,7 +7,8 @@ from model.linear import Linear
 from model.videomae import VideoMAE
 from model.vit_mae.vit_mae import (
     ContrastViT,
-    ContrastViTMAE
+    ContrastViTMAE,
+    MAE
 )
 import matplotlib.pyplot as plt
 from utils.metric_utils import r2_score, bits_per_spike
@@ -24,7 +25,8 @@ NAME2MODEL = {
     "Linear": Linear,
     "VideoMAE": VideoMAE,
     "ContrastViT": ContrastViT,
-    "ContrastViTMAE": ContrastViTMAE
+    "ContrastViTMAE": ContrastViTMAE,
+    "MAE": MAE
 }
 
 def get_args():
