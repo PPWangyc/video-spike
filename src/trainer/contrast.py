@@ -100,9 +100,14 @@ class ContrastTrainer():
         # use best model to transform the data
         self.log.info('Transforming the data')
         # self.model.load_state_dict(self.best_model)
-        data_loader, self.model = self.accelerator.prepare(data_loader, self.model)
+        data_loader= self.accelerator.prepare(data_loader)
         # set model mask ratio to 0
-        self.model.config.mask_ratio = 0
+        self.model.eval()
+        if self.distribute:
+            self.log.warning(f'Using DDP, setting mask ratio to 0, original mask ratio: {self.model.module.config.mask_ratio}')
+            self.model.module.config.mask_ratio = 0
+        else:
+            self.model.config.mask_ratio = 0
         features = []
         for batch in tqdm(data_loader):
             outputs = self._forward(batch['ref'])
@@ -110,6 +115,7 @@ class ContrastTrainer():
                 embedding = outputs['z']
             else:
                 self.log.error('No embedding found in the model!')
+            embedding = self.accelerator.gather(embedding) 
             features.append(embedding)
         return torch.cat(features, dim=0)
     
@@ -127,6 +133,8 @@ class ContrastTrainer():
         eid = kwargs.get('eid', None)
         model_name = self.model.__class__.__name__
         self.use_wandb = kwargs.get('use_wandb', False)
+        self.distribute = not self.accelerator.state.distributed_type.value == 'NO'
+        self.log.warning('Using DDP!') if self.distribute else self.log.warning('Single GPU training!')
         if self.use_wandb and self.accelerator.is_main_process:
             wandb.init(project='video-ssl', 
                        name="{}_{}".format(eid[:5], model_name),

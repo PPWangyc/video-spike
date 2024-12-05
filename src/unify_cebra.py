@@ -11,7 +11,7 @@ args = parser.parse_args()
 data_dir = 'data'
 label = args.label
 # get all files that start with data_rrr_cebra
-files = [f for f in os.listdir(data_dir) if f.startswith(f'data_rrr_{label}')]
+files = [f for f in os.listdir(data_dir) if f.startswith(f'data_rrr_{label}_')]
 print(files)
 train_data = {}
 for f in files:

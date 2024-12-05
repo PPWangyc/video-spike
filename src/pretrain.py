@@ -99,13 +99,14 @@ def main():
     max_lr = config.optimizer.lr * global_batch_size
     num_epochs = max_steps // len(data_loader)
     log.info(f"Max Steps: {max_steps}, Num Epochs: {num_epochs}, Max LR: {max_lr}, Global Batch Size: {global_batch_size}, World Size: {world_size}")
-    lr_scheduler = OneCycleLR(
-        optimizer=optimizer,
-        total_steps=max_steps,
-        max_lr=max_lr,
-        pct_start=2 / num_epochs,
-        final_div_factor=1000,
-    )
+    # lr_scheduler = OneCycleLR(
+    #     optimizer=optimizer,
+    #     total_steps=max_steps,
+    #     max_lr=max_lr,
+    #     pct_start=2 / num_epochs,
+    #     final_div_factor=1000,
+    # )
+    lr_scheduler = None
 
     # set criterion
     # temperature is to control the sharpness of the distribution
