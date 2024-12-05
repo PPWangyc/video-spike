@@ -17,8 +17,8 @@ dirs:
 # Training configuration
 training:
   num_epochs: 200
-  train_batch_size: 16
-  test_batch_size: 16  
+  train_batch_size: 128
+  test_batch_size: 128
   shuffle_test_dataloader: false    # Shuffle test dataloader between epochs
   num_workers: 1 # Number of workers for the DataLoader
 

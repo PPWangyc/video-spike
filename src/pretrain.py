@@ -72,7 +72,7 @@ def main():
 
     data_loader,_ = make_contrast_loader('/expanse/lustre/scratch/ywang74/temp_project/Downloads/data_rrr_whisker-video.h5',
                                        eid=args.eid,
-                                       batch_size=128,
+                                       batch_size=config.training.train_batch_size,
                                        shuffle=True,
                                        transform = transform,
     )
@@ -94,11 +94,11 @@ def main():
     )
 
     # set scheduler
-    max_steps = 20000
-    global_batch_size = config.train.batch_size * world_size
+    max_steps = 10000
+    global_batch_size = config.training.train_batch_size * world_size
     max_lr = config.optimizer.lr * global_batch_size
-    max_steps = max_steps // world_size
     num_epochs = max_steps // len(data_loader)
+    log.info(f"Max Steps: {max_steps}, Num Epochs: {num_epochs}, Max LR: {max_lr}, Global Batch Size: {global_batch_size}, World Size: {world_size}")
     lr_scheduler = OneCycleLR(
         optimizer=optimizer,
         total_steps=max_steps,
@@ -134,7 +134,7 @@ def main():
     trainer.fit()
     data_loader, neural_data = make_contrast_loader('/expanse/lustre/scratch/ywang74/temp_project/Downloads/data_rrr_whisker-video.h5',
                                        eid=args.eid,
-                                       batch_size=256,
+                                       batch_size=config.training.test_batch_size,
                                        shuffle=False,
                                        transform = transform,
     )

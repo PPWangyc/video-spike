@@ -63,7 +63,7 @@ class ContrastTrainer():
         loss_dict = self.criterion(ref, pos, neg)
         self.accelerator.backward(loss_dict['loss'])
         self.optimizer.step()
-        self.lr_scheduler.step()
+        # self.lr_scheduler.step()
         loss_dict = {k: v.item() for k, v in loss_dict.items()}
         return {
             'cur_step': cur_step, # current step

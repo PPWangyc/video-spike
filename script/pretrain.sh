@@ -9,8 +9,8 @@
 #SBATCH -c 8
 #SBATCH --ntasks-per-node=1
 #SBATCH --mem 150000
-#SBATCH --gpus=1
-#SBATCH -t 1-00
+#SBATCH --gpus=4
+#SBATCH -t 0-10:00
 #SBATCH --export=ALL
 
 . ~/.bashrc

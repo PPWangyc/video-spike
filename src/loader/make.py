@@ -30,7 +30,12 @@ def make_loader(config, dataset_split_dict, accelerator=None):
     test_dataloader = test_dataset.get_dataloader()
     return train_dataloader, val_dataloader, test_dataloader
 
-def make_contrast_loader(dataset_path,eid=None,batch_size=512,shuffle=True,transform=None):
+def make_contrast_loader(dataset_path,
+                         eid=None,
+                         batch_size=512,
+                         shuffle=True,
+                         transform=None,
+                         num_workers=4):
     data = load_h5_file(dataset_path, eid)
     video = data[eid]['X']
     neural_data = data[eid]['y']
@@ -43,7 +48,7 @@ def make_contrast_loader(dataset_path,eid=None,batch_size=512,shuffle=True,trans
         batch_size=batch_size,
         shuffle=shuffle,
         pin_memory=True,
-        num_workers=4
+        num_workers=num_workers
     )
 
     return dataloader, neural_data
