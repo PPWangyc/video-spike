@@ -77,6 +77,10 @@ def main():
         input_mod = 'vit'
     elif args.input_mod == 'cm':
         input_mod = 'cm'
+    elif args.input_mod == 'm':
+        input_mod = 'm'
+    elif args.input_mod == 'c':
+        input_mod = 'c'
     # set dataset
     if args.input_mod == 'whisker-video':
         import h5py
@@ -112,12 +116,14 @@ def main():
         ground_truth[eid] = train_data[eid]["y"][1]
         for i in range(2):
             train_data[eid]["y"][i] = gaussian_filter1d(train_data[eid]["y"][i], smooth_w, axis=1)
-            if args.input_mod in ['cebra', 'pca', 'ws', 'whisker-video','vit','cm']:
+            if args.input_mod in ['cebra', 'pca', 'ws', 'whisker-video','vit','cm','m','c']:
                 # select_idx = np.linspace(0, 119, T, dtype=int)
                 # if args.input_mod == 'vit':
                 #     train_data[eid]["X"][i] = train_data[eid]["X"][i][:,select_idx]
             # if args.input_mod =='cebra' or args.input_mod == 'pca' or args.input_mod == 'ws' or args.input_mod == 'whisker-video':
-                print(train_data[eid]["X"][i].shape, train_data[eid]["y"][i].shape)
+                if args.input_mod == 'm':
+                    # only use the first 3 channels for MAE
+                    train_data[eid]["X"][i] = train_data[eid]["X"][i][...,:3]
                 continue
             # one-hot encoding for choice and block
             if args.input_mod != 'me' and args.input_mod != 'of-2d':

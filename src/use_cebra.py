@@ -68,7 +68,8 @@ all_X = np.concatenate([train_X, test_X], axis=0)
 train_idx, test_idx = np.arange(train_X.shape[0]), np.arange(train_X.shape[0], all_X.shape[0])
 print(all_X.shape)
 # get cebra embeddings
-all_X = get_pca_embedding(all_X, out_dim=out_dim) if use_pca else get_cebra_embedding(all_X, out_dim=out_dim,save=True)
+save_path = f"{label}_{eid[:5]}"
+all_X = get_pca_embedding(all_X, out_dim=out_dim) if use_pca else get_cebra_embedding(all_X, out_dim=out_dim,save_path=save_path)
 train_X = all_X[train_idx]
 test_X = all_X[test_idx]
 train_data[eid]["X"].append(train_X)

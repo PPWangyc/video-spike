@@ -126,6 +126,10 @@ class ContrastTrainer():
             self.data_loader, self.model, self.optimizer, self.criterion = self.accelerator.prepare(
                 self.data_loader, self.model, self.optimizer, self.criterion
             )
+            # Print memory usage in bytes
+            self.log.info(f"Memory Allocated: {torch.cuda.memory_allocated()/1024**2:.2f} MB")
+            self.log.info(f"Max Memory Allocated: {torch.cuda.max_memory_allocated()/1024**2:.2f} MB")
+            self.log.info(f"Memory Cached (Reserved): {torch.cuda.memory_reserved()/1024**2:.2f} MB")
         else:
             self.log.warning('No accelerator provided, using CPU!')
 

@@ -293,7 +293,7 @@ def get_rrr_data(dataloader, input_mod):
     y = np.concatenate(y, axis=0)
     return X, y
 
-def get_cebra_embedding(video, out_dim=3, save=False):
+def get_cebra_embedding(video, out_dim=3, save_path=None):
     # video: (N, T, C, H, W), C = 1 grayscale
     # output: N, T, out_dim
     video_data = video.squeeze(2)
@@ -309,14 +309,14 @@ def get_cebra_embedding(video, out_dim=3, save=False):
     embedding = single_cebra_model.transform(video_data)
     assert(embedding.shape == (n*t, out_dim))
 
-    if save:
+    if save_path:
         ax = cebra.plot_loss(single_cebra_model)
         fig = ax.get_figure()
-        fig.savefig("cebra_loss.png")
+        fig.savefig(save_path + "_loss.png")
 
         ax = cebra.plot_embedding(embedding)
         fig = ax.get_figure()
-        fig.savefig("cebra_embedding.png")
+        fig.savefig(save_path + "_embedding.png")
     return embedding.reshape(n, t, out_dim)
     # cebra_embeddings = []
     # for i in tqdm(range(video.shape[0])):
