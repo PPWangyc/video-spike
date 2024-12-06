@@ -141,12 +141,15 @@ def main():
                                        shuffle=False,
                                        transform = transform,
     )
-    embedding = trainer.transform(data_loader).cpu().numpy()
+    # get embedding
     if accelerator.is_main_process:
+        embedding = trainer.transform(data_loader).cpu().numpy()
+        log.info(f"Transformed Embedding Shape: {embedding.shape}, Num train trials: {train_num}, Num test trials: {test_num}")
         embedding = embedding.reshape((train_num + test_num), 120, -1)
+        log.info(f"Trial Reshaped Embedding Shape: {embedding.shape}")
         ax = cebra.plot_embedding(embedding)
         fig = ax.get_figure()
-        fig.savefig(f'vit_{args.eid[:5]}_embed.png')
+        fig.savefig(f'{args.model}_{args.eid[:5]}_embed.png')
         train_X = embedding[train_idx]
         test_X = embedding[test_idx]
         train_y = neural_data[train_idx]

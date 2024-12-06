@@ -97,28 +97,28 @@ class ContrastTrainer():
 
     @torch.no_grad()
     def transform(self, data_loader):
-        # use best model to transform the data
-        self.log.info('Transforming the data')
-        # self.model.load_state_dict(self.best_model)
-        data_loader= self.accelerator.prepare(data_loader)
-        # set model mask ratio to 0
-        self.model.eval()
-        if self.distribute:
-            self.log.warning(f'Using DDP, setting mask ratio to 0, original mask ratio: {self.model.module.config.mask_ratio}')
-            self.model.module.config.mask_ratio = 0
-        else:
-            self.model.config.mask_ratio = 0
-        features = []
-        for batch in tqdm(data_loader):
-            outputs = self._forward(batch['ref'])
-            if 'z' in outputs:
-                embedding = outputs['z']
+        if self.accelerator.is_main_process:
+            self.log.info('Transforming the data')
+            if self.distribute:
+                self.log.warning(f'Using DDP, setting mask ratio to 0, original mask ratio: {self.model.module.config.mask_ratio}')
+                self.model.module.config.mask_ratio = 0
+                self.log.warning(f'Moving model to device: {self.accelerator.device}')
+                self.model = self.model.to(self.accelerator.device)
             else:
-                self.log.error('No embedding found in the model!')
-            features.append(embedding)
-        features = torch.cat(features, dim=0)
-        features = self.accelerator.gather(features)
-        return features
+                self.model.config.mask_ratio = 0
+            self.model.eval()
+            features = []
+            for batch in tqdm(data_loader):
+                batch = move_batch_to_device(batch, self.accelerator.device)
+                outputs = self._forward(batch['ref'])
+                if 'z' in outputs:
+                    embedding = outputs['z']
+                else:
+                    self.log.error('No embedding found in the model!')
+                features.append(embedding)
+            features = torch.cat(features, dim=0)
+            # features = self.accelerator.gather(features) # gather all the features from all the processes
+            return features
     
     def _prepare_accelerator(self):
         if self.accelerator is not None:
