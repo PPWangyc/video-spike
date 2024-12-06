@@ -98,7 +98,7 @@ def main():
     # set scheduler
     max_steps = 10000
     global_batch_size = config.training.train_batch_size * world_size
-    max_lr = config.optimizer.lr * global_batch_size
+    max_lr = config.optimizer.lr * accelerator.num_processes
     num_epochs = max_steps // len(data_loader)
     log.info(f"Max Steps: {max_steps}, Num Epochs: {num_epochs}, Max LR: {max_lr}, Global Batch Size: {global_batch_size}, World Size: {world_size}")
     # lr_scheduler = OneCycleLR(
