@@ -17,7 +17,6 @@ class ContrastViTMAE(nn.Module):
         z = self.proj(cls_token)
         # normalize projection
         z = z / z.norm(dim=-1, keepdim=True)
-        z = cls_token
         return {
             'z': z,
             'recon_loss': recon_loss,
