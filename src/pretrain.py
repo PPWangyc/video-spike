@@ -96,7 +96,7 @@ def main():
     )
 
     # set scheduler
-    max_steps = 10000
+    max_steps = 40000
     global_batch_size = config.training.train_batch_size * world_size
     max_lr = config.optimizer.lr * accelerator.num_processes
     num_epochs = max_steps // len(data_loader)

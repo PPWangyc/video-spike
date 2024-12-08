@@ -56,7 +56,7 @@ out_dim = 5
 
 # Cebra embeddings
 # get train whisker-video
-train_X , train_y = get_rrr_data(test_dataloader, 'whisker-video')
+train_X , train_y = get_rrr_data(train_dataloader, 'whisker-video')
 # append neural activity to train data as y
 train_data[eid]["y"].append(train_y)
 
