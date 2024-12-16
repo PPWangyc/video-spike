@@ -75,6 +75,8 @@ def main():
                                        batch_size=config.training.train_batch_size,
                                        shuffle=True,
                                        transform = transform,
+                                       device = accelerator.device,
+                                       idx_offset=3,
     )
     # set model
     model_name = args.model

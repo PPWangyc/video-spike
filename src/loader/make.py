@@ -35,20 +35,26 @@ def make_contrast_loader(dataset_path,
                          batch_size=512,
                          shuffle=True,
                          transform=None,
+                         device='cuda',
+                         idx_offset=4,
+                         time_offset=None,
                          num_workers=4):
     data = load_h5_file(dataset_path, eid)
     video = data[eid]['X']
     neural_data = data[eid]['y']
     dataset = ContrastDataset(
         video,
-        transform=transform
+        transform=transform,
+        idx_offset=idx_offset,
+        time_offset=time_offset,
+        device=device
     )
     dataloader = DataLoader(
         dataset,
         batch_size=batch_size,
         shuffle=shuffle,
-        pin_memory=True,
-        num_workers=num_workers
+        # pin_memory=True,
+        # num_workers=1
     )
 
     return dataloader, neural_data
