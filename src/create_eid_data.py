@@ -70,8 +70,9 @@ def main():
     train_data = {
         eid:
         {
-            "X": [], 
-            "y": [], 
+            "X": [], # X[0] is train, X[1] is test, X[2] is val
+            "y": [], # y[0] is train, y[1] is test, y[2] is val
+            "timestamp": [], # timestamp[0] is train, timestamp[1] is test, timestamp[2] is val
             "setup": {}
         } 
         for eid in include_eids
@@ -84,13 +85,18 @@ def main():
         train_dataloader, val_dataloader, test_dataloader = make_loader(config, dataset_split_dict)
         meta_data = get_metadata_from_loader(test_dataloader, config)
         print(f"meta_data: {meta_data}")
-        train_X , train_y = get_rrr_data(train_dataloader, input_mod)
+        train_X , train_y, train_timestamp = get_rrr_data(train_dataloader, input_mod)
         train_data[eid]["X"].append(train_X)
         train_data[eid]["y"].append(train_y)
-        test_X , test_y = get_rrr_data(test_dataloader, input_mod)
+        train_data[eid]["timestamp"].append(train_timestamp)
+        test_X , test_y, test_timestamp = get_rrr_data(test_dataloader, input_mod)
         train_data[eid]["X"].append(test_X)
         train_data[eid]["y"].append(test_y)
-
+        train_data[eid]["timestamp"].append(test_timestamp)
+        val_X, val_y, val_timestamp = get_rrr_data(val_dataloader, input_mod)
+        train_data[eid]["X"].append(val_X)
+        train_data[eid]["y"].append(val_y)
+        train_data[eid]["timestamp"].append(val_timestamp)
     # save data
     if args.input_mod == 'whisker-video':
         # Save using HDF5
@@ -99,8 +105,13 @@ def main():
                 grp = f.create_group(str(eid))
                 grp.create_dataset('X_train', data=data['X'][0], compression='gzip')
                 grp.create_dataset('y_train', data=data['y'][0], compression='gzip')
+                grp.create_dataset('timestamp_train', data=data['timestamp'][0], compression='gzip')
                 grp.create_dataset('X_test', data=data['X'][1], compression='gzip')
                 grp.create_dataset('y_test', data=data['y'][1], compression='gzip')
+                grp.create_dataset('timestamp_test', data=data['timestamp'][1], compression='gzip')
+                grp.create_dataset('X_val', data=data['X'][2], compression='gzip')
+                grp.create_dataset('y_val', data=data['y'][2], compression='gzip')
+                grp.create_dataset('timestamp_val', data=data['timestamp'][2], compression='gzip')
                 # Store setup data in the group attributes
                 for key, value in data['setup'].items():
                     print(key, value)

@@ -72,7 +72,10 @@ data:
       transform: null
       transform_kwargs: {}
       input: True
-
+    timestamp:
+      transform: null
+      transform_kwargs: {}
+      input: False
   # dataset_name: lorenz # Any registered dataset name.
   dataset_name: ibl # Any registered dataset name.
   dataset_class: ssl # Any registered dataset class name.

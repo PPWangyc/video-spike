@@ -87,6 +87,8 @@ class BaseDataset():
             return torch.from_numpy(value)
         elif mod == 'block':
             return torch.from_numpy(value)
+        elif mod == 'timestamp':
+            return torch.from_numpy(value)
         else:
             raise NotImplementedError(f"Modality {mod} not implemented")
 

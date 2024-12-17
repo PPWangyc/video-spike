@@ -9,7 +9,8 @@ import time
 class ContrastDataset(Dataset):
     def __init__(
             self, 
-            video, 
+            data_dict, 
+            mode,
             timestamp=None,
             image_size=144,
             idx_offset=10,
@@ -17,11 +18,43 @@ class ContrastDataset(Dataset):
             transform=None,
             device="cpu"
             ):
-        self.video = torch.tensor(video) / 255.0 # Normalize the video
-        # load the video to the device
-        self.video=self.video.to(device)
+        """
+        Initializes the dataset.
+
+        Parameters:
+        - data_dict: Dictionary containing different splits of data.
+        - mode: One of ['pretrain', 'train', 'val', 'test'].
+        - image_size: Size of the images (assumed square).
+        - idx_offset: Frame selection offset for positive examples.
+        - time_offset: Time offset for selecting positive examples, in seconds.
+        - transform: Transformations to apply to frames.
+        - device: The device to load data onto.
+        """
+
+        if mode == 'pretrain':
+            # Concatenate train, val, and test datasets
+            video = np.concatenate([data_dict['train_X'], data_dict['val_X'], data_dict['test_X']], axis=0)
+            n, t, c, h, w = video.shape
+            video = video.reshape(n*t, c, h, w)
+            timestamp = np.concatenate([data_dict['train_timestamp'], data_dict['val_timestamp'], data_dict['test_timestamp']], axis=0)
+            timestamp = timestamp.reshape(-1)
+            # Sort by timestamp
+            sort_indices = np.argsort(timestamp)
+            video = video[sort_indices]
+            self.timestamps = timestamp[sort_indices]
+        else:
+            video = data_dict[f'{mode}_X']
+            self.labels = data_dict[f'{mode}_y']  # Ensure labels are available for train, val, test
+            self.timestamps = data_dict[f'{mode}_timestamp']
+            # Sort by timestamp
+            sort_indices = np.argsort(self.timestamps)
+            video = video[sort_indices]
+            self.labels = self.labels[sort_indices]
+            self.timestamps = self.timestamps[sort_indices]
+
+        # Convert video to tensor and normalize
+        self.video = torch.tensor(video, dtype=torch.float32).div_(255.0).to(device)
         self.num_frames, self.height, self.width, self.channels = self.video.shape
-        self.timestamp = timestamp
         if timestamp is None:
             self.timestamp = np.linspace(0, len(video)-1, len(video))
         self.idx_offset = idx_offset

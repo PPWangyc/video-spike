@@ -220,7 +220,10 @@ def draw_results(df_log, metrics=["bps", "r2", "rsquared", "mse", "mae", "acc"])
 
 def get_rrr_data(dataloader, input_mod):
     X, y = [], []
+    timestamps = []
     for batch in tqdm(dataloader):
+        assert 'timestamp' in batch, "timestamp is not in the batch"
+        timestamps.append(batch['timestamp'].numpy())
         if input_mod == 'whisker-of-video':
             x_vec = torch.tensor(np.median(batch[input_mod][...,0].numpy(),axis=(2,3)))
             y_vec = torch.tensor(np.median(batch[input_mod][...,1].numpy(),axis=(2,3)))
@@ -292,7 +295,8 @@ def get_rrr_data(dataloader, input_mod):
         y.append(batch["ap"].numpy())
     X = np.concatenate(X, axis=0)
     y = np.concatenate(y, axis=0)
-    return X, y
+    timestamps = np.concatenate(timestamps, axis=0)
+    return X, y, timestamps
 
 def get_cebra_embedding(video, out_dim=3, save_path=None):
     # video: (N, T, C, H, W), C = 1 grayscale

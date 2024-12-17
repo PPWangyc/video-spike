@@ -48,6 +48,10 @@ data:
       width: 128
       height: 128
       input: True
+    timestamp: 
+      transform: null
+      transform_kwargs: {}
+      input: False
     choice: 
       transform: null
       transform_kwargs: {}

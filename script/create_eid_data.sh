@@ -2,8 +2,8 @@
 
 #SBATCH --account=col169
 #SBATCH --partition=gpu-shared
-#SBATCH --job-name="train-rr"
-#SBATCH --output="train.%j.out"
+#SBATCH --job-name="create_eid_data"
+#SBATCH --output="create_eid_data.%j.out"
 #SBATCH -N 1
 #SBACTH --array=0
 #SBATCH -c 8

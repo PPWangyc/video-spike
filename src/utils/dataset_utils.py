@@ -16,22 +16,33 @@ def load_h5_file(file_path, eid=None):
         eids = list(file.keys()) if eid is None else eids
         train_data = {
             eid : {
-                "X" : [file[eid]['X_train'][()], file[eid]['X_test'][()]],
-                "y" : [file[eid]['y_train'][()], file[eid]['y_test'][()]],
+                "X" : [file[eid]['X_train'][()], file[eid]['X_test'][()], file[eid]['X_val'][()]],
+                "y" : [file[eid]['y_train'][()], file[eid]['y_test'][()], file[eid]['y_val'][()]],
+                "timestamp" : [file[eid]['timestamp_train'][()], file[eid]['timestamp_test'][()], file[eid]['timestamp_val'][()]],
                 "setup" : {}
             } for eid in eids
         }
         for eid in eids:
+            assert 'timestamp' in train_data[eid], f"Timestamp not found for EID: {eid}"
             n, t, c, h, w = train_data[eid]["X"][0].shape
-            train_data[eid]["X"][0] = train_data[eid]["X"][0].reshape(n * t, c, h, w)
+            # train_data[eid]["X"][0] = train_data[eid]["X"][0].reshape(n * t, c, h, w)
             n, t, c, h, w = train_data[eid]["X"][1].shape
-            train_data[eid]["X"][1] = train_data[eid]["X"][1].reshape(n * t, c, h, w)
-            train_data[eid]["X"] = np.concatenate(train_data[eid]["X"], axis=0)
-            train_data[eid]["y"] = np.concatenate(train_data[eid]["y"], axis=0)
+            # train_data[eid]["X"][1] = train_data[eid]["X"][1].reshape(n * t, c, h, w)
+            n, t, c, h, w = train_data[eid]["X"][2].shape
+            # train_data[eid]["X"][2] = train_data[eid]["X"][2].reshape(n * t, c, h, w)
+            # train_data[eid]["X"] = np.concatenate(train_data[eid]["X"], axis=0)
+            # train_data[eid]["y"] = np.concatenate(train_data[eid]["y"], axis=0)
         return{
             eid : {
-                "X" : train_data[eid]["X"],
-                "y" : train_data[eid]["y"],
+                "train_X" : train_data[eid]["X"][0],
+                "test_X" : train_data[eid]["X"][1],
+                "val_X" : train_data[eid]["X"][2],
+                "train_y" : train_data[eid]["y"][0],
+                "test_y" : train_data[eid]["y"][1],
+                "val_y" : train_data[eid]["y"][2],
+                "train_timestamp" : train_data[eid]["timestamp"][0],
+                "test_timestamp" : train_data[eid]["timestamp"][1],
+                "val_timestamp" : train_data[eid]["timestamp"][2],
             } for eid in eids
         }
         
