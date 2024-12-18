@@ -10,6 +10,10 @@ from model.vit_mae.vit_mae import (
     ContrastViTMAE,
     MAE
 )
+from model.rrr import (
+    train_model,
+    train_model_main
+)
 import matplotlib.pyplot as plt
 from utils.metric_utils import r2_score, bits_per_spike
 from sklearn.metrics import r2_score as r2_score_sklearn
@@ -367,3 +371,87 @@ def get_pca_embedding(video, out_dim=5):
 
     # pca_embeddings = np.array(pca_embeddings)
     return pca_embeddings
+
+def train_rrr(data_dict):
+    ground_truth = {}
+    for eid in data_dict:
+        _, mean_X, std_X = _std(data_dict[eid]["X"][0])
+        _, mean_y, std_y = _std(data_dict[eid]["y"][0])
+        ground_truth[eid] = data_dict[eid]["y"][1].copy()
+        for i in range(2):
+            K = data_dict[eid]["X"][i].shape[0]
+            T = data_dict[eid]["X"][i].shape[1]
+            data_dict[eid]["X"][i] = (data_dict[eid]["X"][i] - mean_X) / std_X
+            if len(data_dict[eid]["X"][i].shape) == 2:
+                data_dict[eid]["X"][i] = np.expand_dims(data_dict[eid]["X"][i], axis=0)
+            # add bias
+            data_dict[eid]["X"][i] = np.concatenate([data_dict[eid]["X"][i], np.ones((K, T, 1))], axis=2)
+            data_dict[eid]["y"][i] = (data_dict[eid]["y"][i] - mean_y) / std_y
+            print(f"X shape: {data_dict[eid]['X'][i].shape}, y shape: {data_dict[eid]['y'][i].shape}")
+        data_dict[eid]["setup"]["mean_X_Tv"] = mean_X
+        data_dict[eid]["setup"]["std_X_Tv"] = std_X
+        data_dict[eid]["setup"]["mean_y_TN"] = mean_y
+        data_dict[eid]["setup"]["std_y_TN"] = std_y
+    l2 = 100
+    n_comp = 3
+    print("Training RRR")
+    result = {}
+    test_bps = []
+    for eid in data_dict:
+        _train_data = {eid: data_dict[eid]}
+        model, mse_val = train_model_main(
+            train_data=_train_data,
+            l2=l2,
+            n_comp=n_comp,
+            model_fname='tmp',
+            save=False,
+        )
+        print(f"Model {eid} trained")
+        with torch.no_grad():
+            _, _, pred_orig = model.predict_y_fr(data_dict, eid, 1)
+        pred = pred_orig.cpu().numpy()
+        threshold = 1e-3
+        trial_len = 2.
+
+        pred = np.clip(pred, threshold, None)
+        num_neuron = pred.shape[2]
+        gt_held_out = ground_truth[eid]
+        mean_fr = gt_held_out.sum(1).mean(0) / trial_len
+        keep_idxs = np.arange(len(mean_fr)).flatten()
+
+        bps_result_list = []
+        r2_result_list = []
+
+        for n_i in tqdm(keep_idxs, desc='co-bps'):
+            bps = bits_per_spike(
+                pred[:, :, [n_i]],
+                gt_held_out[:, :, [n_i]],
+            )
+            _r2_list = []
+            for k in range(pred.shape[0]):
+                r2 = r2_score_sklearn(
+                    gt_held_out[k, :, n_i],
+                    pred[k, :, n_i],
+                )
+                _r2_list.append(r2)
+
+            r2 = np.nanmean(_r2_list)
+            r2_result_list.append(r2)
+            if np.isinf(bps):
+                bps = np.nan
+            bps_result_list.append(bps)
+        co_bps = np.nanmean(bps_result_list)
+        print(f"Co-BPS: {co_bps}")
+        print(f"r2: {np.nanmean(r2_result_list)}")
+        test_bps.append(co_bps)
+
+        result[eid] = {
+            'gt': gt_held_out,
+            'pred': pred,
+            'bps': bps_result_list,
+            'r2': r2_result_list,
+            'eid': eid,
+        }
+    return result
+
+            

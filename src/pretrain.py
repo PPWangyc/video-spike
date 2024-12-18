@@ -70,13 +70,32 @@ def main():
     train_idx = list(range(train_num))
     test_idx = list(range(train_num, train_num + test_num))
 
-    data_loader,_ = make_contrast_loader('/expanse/lustre/scratch/ywang74/temp_project/Downloads/data_rrr_whisker-video.h5',
+    pretrain_data_loader,_ = make_contrast_loader('/expanse/lustre/scratch/ywang74/temp_project/Downloads/data_rrr_whisker-video.h5',
                                        eid=args.eid,
                                        batch_size=config.training.train_batch_size,
                                        shuffle=True,
                                        transform = transform,
                                        device = accelerator.device,
                                        idx_offset=3,
+                                       mode='pretrain'
+    )
+    valid_data_loader, _ = make_contrast_loader('/expanse/lustre/scratch/ywang74/temp_project/Downloads/data_rrr_whisker-video.h5',                               
+                                       eid=args.eid,
+                                       batch_size=1,
+                                       shuffle=False,
+                                       transform = transform,
+                                       device = accelerator.device,
+                                       idx_offset=3,
+                                       mode='val'
+    )
+    train_data_loader, _ = make_contrast_loader('/expanse/lustre/scratch/ywang74/temp_project/Downloads/data_rrr_whisker-video.h5',                               
+                                       eid=args.eid,
+                                       batch_size=1,
+                                       shuffle=False,
+                                       transform = transform,
+                                       device = accelerator.device,
+                                       idx_offset=3,
+                                       mode='train'
     )
     # set model
     model_name = args.model
@@ -101,7 +120,7 @@ def main():
     max_steps = 40000
     global_batch_size = config.training.train_batch_size * world_size
     max_lr = config.optimizer.lr * accelerator.num_processes
-    num_epochs = max_steps // len(data_loader)
+    num_epochs = max_steps // len(pretrain_data_loader)
     log.info(f"Max Steps: {max_steps}, Num Epochs: {num_epochs}, Max LR: {max_lr}, Global Batch Size: {global_batch_size}, World Size: {world_size}")
     # lr_scheduler = OneCycleLR(
     #     optimizer=optimizer,
@@ -129,33 +148,49 @@ def main():
         "max_steps": max_steps,
         "log": log,
         "use_wandb": config.wandb.use,
+        "val_data_loader": valid_data_loader,
+        "train_data_loader": train_data_loader,
     }
     trainer = make_contrast_trainer(
         model=model,
         optimizer=optimizer,
-        data_loader=data_loader,
+        data_loader=pretrain_data_loader,
         **trainer_kwargs
     )
     trainer.fit()
-    data_loader, neural_data = make_contrast_loader('/expanse/lustre/scratch/ywang74/temp_project/Downloads/data_rrr_whisker-video.h5',
+    # get test_data_loader
+    test_data_loader, _ = make_contrast_loader('/expanse/lustre/scratch/ywang74/temp_project/Downloads/data_rrr_whisker-video.h5',                               
                                        eid=args.eid,
-                                       batch_size=config.training.test_batch_size,
+                                       batch_size=1,
                                        shuffle=False,
                                        transform = transform,
+                                       device = accelerator.device,
+                                       idx_offset=3,
+                                       mode='test'
     )
     # get embedding
     if accelerator.is_main_process:
-        embedding = trainer.transform(data_loader).cpu().numpy()
-        log.info(f"Transformed Embedding Shape: {embedding.shape}, Num train trials: {train_num}, Num test trials: {test_num}")
-        embedding = embedding.reshape((train_num + test_num), 120, -1)
-        log.info(f"Trial Reshaped Embedding Shape: {embedding.shape}")
-        ax = cebra.plot_embedding(embedding)
+        train_embedding, train_neural = trainer.transform(
+            test_data_loader, 
+            return_neural=True,
+            use_best=True
+            )
+        test_embedding, test_neural = trainer.transform(
+            test_data_loader, 
+            return_neural=True,
+            use_best=True
+            )
+        train_embedding, train_neural = train_embedding.cpu().numpy(), train_neural.cpu().numpy()
+        test_embedding, test_neural = test_embedding.cpu().numpy(), test_neural.cpu().numpy()
+        train_n, val_n = train_neural.shape[0], test_neural.shape[0]
+        e_dim = train_embedding.shape[-1]
+        # reshape the embeddings
+        train_embedding = train_embedding.reshape((train_n, -1, e_dim))
+        test_embedding = test_embedding.reshape((val_n, -1, e_dim))
+        log.info(f"Transformed Train Embedding Shape: {train_embedding.shape}, Train Neural Shape: {train_neural.shape}, Test Embedding Shape: {test_embedding.shape}, Test Neural Shape: {test_neural.shape}")
+        ax = cebra.plot_embedding(train_embedding)
         fig = ax.get_figure()
         fig.savefig(f'{args.model}_{args.eid[:5]}_embed.png')
-        train_X = embedding[train_idx]
-        test_X = embedding[test_idx]
-        train_y = neural_data[train_idx]
-        test_y = neural_data[test_idx]
         train_data = {
             args.eid:
             {
@@ -164,12 +199,12 @@ def main():
                 "setup": {}
             } 
         }
-        train_data[args.eid]["X"].append(train_X)
-        train_data[args.eid]["X"].append(test_X)
-        train_data[args.eid]["y"].append(train_y)
-        train_data[args.eid]["y"].append(test_y)
-        print(train_X.shape, train_y.shape)
-        print(test_X.shape, test_y.shape)
+        train_data[args.eid]["X"].append(train_embedding)
+        train_data[args.eid]["X"].append(test_embedding)
+        train_data[args.eid]["y"].append(train_neural)
+        train_data[args.eid]["y"].append(test_neural)
+        log.info(f"Train Data Shape: {train_data[args.eid]['X'][0].shape}, Neural Data Shape: {train_data[args.eid]['y'][0].shape}")
+        log.info(f"Test Data Shape: {train_data[args.eid]['X'][1].shape}, Neural Data Shape: {train_data[args.eid]['y'][1].shape}")
         np.save(f'data/data_rrr_{args.model}_{args.eid[:5]}', train_data)
 if __name__ == '__main__':
     main()
