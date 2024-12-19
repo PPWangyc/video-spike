@@ -123,8 +123,8 @@ class ContrastTrainer():
         self.log.info('Validating the model')
         with torch.no_grad():
             self.model.eval()
-            train_embeddings, train_y = self.transform(self.train_data_loader, return_neural=True, use_best=True)
-            val_embeddings, val_y = self.transform(self.val_data_loader, return_neural=True, use_best=True)
+            train_embeddings, train_y = self.transform(self.train_data_loader, return_neural=True, use_best=False)
+            val_embeddings, val_y = self.transform(self.val_data_loader, return_neural=True, use_best=False)
             train_n, val_n = train_y.shape[0], val_y.shape[0]
             e_dim = train_embeddings.shape[-1]
             # reshape the embeddings
