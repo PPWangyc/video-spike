@@ -171,7 +171,7 @@ def main():
     # get embedding
     if accelerator.is_main_process:
         train_embedding, train_neural = trainer.transform(
-            test_data_loader, 
+            train_data_loader, 
             return_neural=True,
             use_best=True
             )

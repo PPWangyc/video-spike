@@ -136,7 +136,7 @@ def main():
         "eid": args.eid,
         "max_steps": max_steps,
         "log": log,
-        "use_wandb": config.wandb.use,
+        "use_wandb": False,
         "val_data_loader": valid_data_loader,
         "train_data_loader": train_data_loader,
     }
@@ -159,7 +159,7 @@ def main():
     # get embedding
     if accelerator.is_main_process:
         train_embedding, train_neural = trainer.transform(
-            test_data_loader, 
+            train_data_loader, 
             return_neural=True,
             use_best=True
             )
