@@ -42,6 +42,7 @@ def get_args():
     parser.add_argument('--eid', type=str, default='d57df551-6dcb-4242-9c72-b806cff5613a')
     parser.add_argument('--input_mod', type=str, default='whisker-motion-energy', help='Input modality')
     parser.add_argument('--model', type=str, default='cm', help='Model name')
+    parser.add_argument('--save_plot', action='store_true', help='Save plot')
     args = parser.parse_args()
     return args
 
