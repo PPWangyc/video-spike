@@ -152,12 +152,6 @@ class ContrastTrainer():
         val_dict = {
             'val_bps': val_bps
         }
-        # set the mask ratio back to original
-        if self.distribute:
-            self.log.warning(f'Using DDP, setting mask ratio to original mask ratio: {self.mask_ratio}')
-            self.model.module.config.mask_ratio = self.mask_ratio
-        else:
-            self.model.config.mask_ratio = self.mask_ratio
         return val_dict
 
     @torch.no_grad()
@@ -174,12 +168,10 @@ class ContrastTrainer():
             self.log.info('Transforming the data')
             if self.distribute:
                 self.log.warning(f'Using DDP, setting mask ratio to 0, original mask ratio: {self.model.module.config.mask_ratio}')
-                self.mask_ratio = self.model.module.config.mask_ratio
                 self.model.module.config.mask_ratio = 0
                 self.log.warning(f'Moving model to device: {self.accelerator.device}')
                 self.model = self.model.to(self.accelerator.device)
             else:
-                self.mask_ratio = self.model.config.mask_ratio
                 self.model.config.mask_ratio = 0
             self.model.eval()
             features = []
@@ -196,6 +188,11 @@ class ContrastTrainer():
                 features.append(embedding)
             features = torch.cat(features, dim=0)
             neurals = torch.cat(neurals, dim=0)
+            # set the mask ratio back to original
+            if self.distribute:
+                self.model.module.config.mask_ratio = self.mask_ratio
+            else:
+                self.model.config.mask_ratio = self.mask_ratio
             # features = self.accelerator.gather(features) # gather all the features from all the processes
             if return_neural:
                 return features, neurals
@@ -233,3 +230,10 @@ class ContrastTrainer():
             self.log.warning('Not using wandb!')
             self.log.info(f'Experiment ID: {eid}, Model: {model_name}, Max steps: {self.max_steps}')
         self.eid = eid
+        self._set_model_mask_ratio()
+
+    def _set_model_mask_ratio(self):
+        if self.distribute:
+            self.mask_ratio = self.model.module.config.mask_ratio
+        else:
+            self.mask_ratio = self.model.config.mask_ratio
