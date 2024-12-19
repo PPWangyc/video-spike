@@ -6,7 +6,6 @@ from utils.utils import (
 )
 from utils.dataset_utils import (
     split_dataset,
-    get_metadata_from_loader
 )
 from utils.config_utils import (
     config_from_kwargs,
@@ -16,23 +15,27 @@ from utils.log_utils import (
     logging
 )
 from utils.loss_utils import (
-    loss_fn,
     loss_fn_
 )
+from utils.plot_utils import (
+    plot_embeddings,
+    plot_embeddings_anim,
+    save_numpy_video_to_gif
+)
 from loader.make import (
-    make_loader,
     make_contrast_loader
 )
 from trainer.make import (
-    make_base_trainer,
     make_contrast_trainer
 )
 import torch
+import torchvision
 from accelerate import Accelerator
 from accelerate.utils import DistributedDataParallelKwargs
 from torch.optim.lr_scheduler import OneCycleLR
 from transformers import ViTMAEConfig
 from torchvision import transforms
+from torchvision.transforms.functional import convert_image_dtype
 from torch_optimizer import Lamb
 import numpy as np
 import cebra
@@ -197,9 +200,34 @@ def main():
         rrr_result = train_rrr(train_data)
         test_bps = np.nanmean(rrr_result[args.eid]['bps'])
         log.info(f"{args.eid} Test BPS: {test_bps}")
-        ax = cebra.plot_embedding(test_embedding[0])
-        fig = ax.get_figure()
-        fig.savefig(f'{args.model}_{args.eid[:5]}_embed_test.png')
+        
+        fig, axes = plot_embeddings(
+            embeddings=test_embedding[0],
+            title=f"{args.model}_{args.eid[:5]}_embed_test",
+        )
+        fig.savefig(f'test_embed_{args.model}_{args.eid[:5]}.png')
+        test_data_loader, _ = make_contrast_loader('/expanse/lustre/scratch/ywang74/temp_project/Downloads/data_rrr_whisker-video.h5',                               
+                                        eid=args.eid,
+                                        batch_size=1,
+                                        shuffle=False,
+                                        transform = None,
+                                        device = accelerator.device,
+                                        idx_offset=3,
+                                        mode='test'
+        )
+        for idx, batch in enumerate(test_data_loader):
+            assert batch['ref'].shape[0] == 1
+            video = batch['ref'].squeeze(0).cpu().numpy()
+            save_numpy_video_to_gif(video, f'test_{args.model}_{args.eid[:5]}_{idx}.gif',fps=10)
+            # save embedding to gif
+            plot_embeddings_anim(
+                embeddings=test_embedding[idx],
+                title=f"{args.model}_{args.eid[:5]}_embed_test_{idx}",
+                outfile=f'test_embed_{args.model}_{args.eid[:5]}_{idx}.gif',
+                fps=10
+            )
+            if idx > 3:
+                break
         # np.save(f'data/data_rrr_{args.model}_{args.eid[:5]}', train_data)
 if __name__ == '__main__':
     main()

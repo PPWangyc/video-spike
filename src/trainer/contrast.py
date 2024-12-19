@@ -98,6 +98,13 @@ class ContrastTrainer():
         }
     
     def _inference(self, batch):
+        if self.model_name == 'MAE':
+            ref = batch['ref']
+            return {
+                'ref': self._forward(ref),
+                'pos': None,
+                'neg': None
+            }
         ref = batch['ref']
         pos = batch['pos']
         neg = batch['neg']
@@ -228,10 +235,10 @@ class ContrastTrainer():
             )
         else:
             self.log.warning('Not using wandb!')
-            self.log.info(f'Experiment ID: {eid}, Model: {model_name}, Max steps: {self.max_steps}')
+        self.log.info(f'Experiment ID: {eid}, Model: {model_name}, Max steps: {self.max_steps}')
         self.eid = eid
         self._set_model_mask_ratio()
-
+        self.model_name = model_name
     def _set_model_mask_ratio(self):
         if self.distribute:
             self.mask_ratio = self.model.module.config.mask_ratio

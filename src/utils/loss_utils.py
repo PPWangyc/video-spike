@@ -1,6 +1,11 @@
 from torch import einsum, logsumexp, no_grad
 
 def loss_fn_(ref, pos, neg, fix_temp=True):
+    # MAE Loss
+    if pos is None and neg is None:
+        return {
+            'loss': ref['recon_loss']
+        }
     if 'recon_loss' in ref and 'temp' in ref:
         return contrast_recon_loss(ref, pos, neg,fix_temp)
     elif 'z' in ref and 'temp' in ref:

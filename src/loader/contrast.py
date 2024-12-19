@@ -48,7 +48,7 @@ class ContrastDataset(Dataset):
             self.timestamp = data_dict[f'{mode}_timestamp']
 
         # Convert video to tensor and normalize
-        self.video = torch.tensor(video, dtype=torch.float32).div_(255.0)
+        self.video = torch.tensor(video, dtype=torch.float32).div_(255.0) if transform else torch.tensor(video, dtype=torch.uint8)
         self.num_frames = self.video.shape[0]
         if timestamp is None:
             self.timestamp = np.linspace(0, len(video)-1, len(video))
